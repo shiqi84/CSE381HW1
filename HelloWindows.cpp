@@ -6,6 +6,10 @@
 #include <string.h>
 #include <tchar.h>
 
+// define event id here
+#define click_one 1101
+#define click_two 1102
+
 // Global variables
 
 // The main window class name.
@@ -87,7 +91,7 @@ int WINAPI WinMain(
         100,        // Button width
         100,        // Button height
         hWnd,       // Parent window
-        NULL,       // No menu.
+        (HMENU)click_one,       // No menu.
         (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );  
@@ -101,7 +105,7 @@ int WINAPI WinMain(
         100,        // Button width
         100,        // Button height
         hWnd,       // Parent window
-        NULL,       // No menu.
+        (HMENU)click_two,       // No menu.
         (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
@@ -172,7 +176,6 @@ int WINAPI WinMain(
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-
     return (int)msg.wParam;
 }
 
@@ -207,6 +210,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
+        case WM_COMMAND:
+        {
+            switch (LOWORD(wParam)) {
+            case click_one:
+                MessageBox(hWnd, L"u just click btn 1", L"!!", MB_OK);
+                break;
+            case click_two:
+                MessageBox(hWnd, L"u just click btn 2", L"!!", MB_OK);
+                break;
+            }
+        }
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
             break;
