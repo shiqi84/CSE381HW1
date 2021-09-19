@@ -9,6 +9,9 @@
 // define event id here
 #define click_one 1101
 #define click_two 1102
+#define click_three 1103
+#define click_four 1104
+#define click_five 1105
 
 // Global variables
 
@@ -84,7 +87,7 @@ int WINAPI WinMain(
 
     HWND hwndButton1 = CreateWindow(
         L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Button 1",      // Button text 
+        L"Minkowski Difference",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         10,         // y position 
@@ -98,7 +101,7 @@ int WINAPI WinMain(
 
     HWND hwndButton2 = CreateWindow(
         L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Button 2",      // Button text 
+        L"Minkowski Sum",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         120,         // y position 
@@ -112,42 +115,42 @@ int WINAPI WinMain(
 
     HWND hwndButton3 = CreateWindow(
         L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Button 3",      // Button text 
+        L"Quickhull",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         230,         // y position 
         100,        // Button width
         100,        // Button height
         hWnd,       // Parent window
-        NULL,       // No menu.
+        (HMENU)click_three,       // No menu.
         (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
 
     HWND hwndButton4 = CreateWindow(
         L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Button 4",      // Button text 
+        L"Point Convex Hull",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         340,         // y position 
         100,        // Button width
         100,        // Button height
         hWnd,       // Parent window
-        NULL,       // No menu.
+        (HMENU)click_four,       // No menu.
         (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
 
     HWND hwndButton5 = CreateWindow(
         L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Button 5",      // Button text 
+        L"GJK",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         450,         // y position 
         100,        // Button width
         100,        // Button height
         hWnd,       // Parent window
-        NULL,       // No menu.
+        (HMENU)click_five,       // No menu.
         (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
@@ -179,6 +182,70 @@ int WINAPI WinMain(
     return (int)msg.wParam;
 }
 
+void OnPaint(HWND hWnd, INT flag)
+{
+    PAINTSTRUCT ps;
+    HDC hdc;
+    HBRUSH hBrush;
+    hdc = BeginPaint(hWnd, &ps);
+    if (flag == 0) {
+        // Fill the window with a colored rect
+        hBrush = CreateSolidBrush(RGB(150, 150, 150));
+        FillRect(hdc, &ps.rcPaint, hBrush);
+
+        // Then print out "Hello, Windows desktop!" in the top left corner.
+        TCHAR greeting[] = _T("Hello there, welcome to my Window!");
+        TextOut(hdc, 120, 100, greeting, _tcslen(greeting));
+    }
+    if (flag == 1) {
+        // Fill the window with a colored rect
+        hBrush = CreateSolidBrush(RGB(224, 144, 144));
+        FillRect(hdc, &ps.rcPaint, hBrush);
+
+        // Print Text
+        TCHAR greeting[] = _T("Minkowski Difference");
+        TextOut(hdc, 120, 10, greeting, _tcslen(greeting));
+    }
+    if (flag == 2) {
+        // Fill the window with a colored rect
+        hBrush = CreateSolidBrush(RGB(216, 224, 144));
+        FillRect(hdc, &ps.rcPaint, hBrush);
+
+        // Print Text
+        TCHAR greeting[] = _T("Minkowski Sum");
+        TextOut(hdc, 120, 10, greeting, _tcslen(greeting));
+    }
+    if (flag == 3) {
+        // Fill the window with a colored rect
+        hBrush = CreateSolidBrush(RGB(149, 224, 144));
+        FillRect(hdc, &ps.rcPaint, hBrush);
+
+        // Print Text
+        TCHAR greeting[] = _T("Quickhull");
+        TextOut(hdc, 120, 10, greeting, _tcslen(greeting));
+    }
+    if (flag == 4) {
+        // Fill the window with a colored rect
+        hBrush = CreateSolidBrush(RGB(144, 203, 224));
+        FillRect(hdc, &ps.rcPaint, hBrush);
+
+        // Print Text
+        TCHAR greeting[] = _T("Point Convex Hull");
+        TextOut(hdc, 120, 10, greeting, _tcslen(greeting));
+    }
+    if (flag == 5) {
+        // Fill the window with a colored rect
+        hBrush = CreateSolidBrush(RGB(157, 144, 224));
+        FillRect(hdc, &ps.rcPaint, hBrush);
+
+        // Print Text
+        TCHAR greeting[] = _T("GJK");
+        TextOut(hdc, 120, 10, greeting, _tcslen(greeting));
+    }
+    // End application-specific layout section.
+    EndPaint(hWnd, &ps);
+}
+
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
 //  PURPOSE:  Processes messages for the main window.
@@ -189,38 +256,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
     HDC hdc;
+    HBRUSH hBrush;
     TCHAR greeting[] = _T("Hello there, welcome to my Window!");
 
     switch (message)
     {
         case WM_PAINT:
-            hdc = BeginPaint(hWnd, &ps);
-
-            // Here your application is laid out.
-
-            // Fill the window with a colored rect
-            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
-
-            // Then print out "Hello, Windows desktop!" in the top left corner.
-            TextOut(hdc, 120, 10, greeting, _tcslen(greeting));
-
-            // End application-specific layout section.
-            EndPaint(hWnd, &ps);
+            OnPaint(hWnd, 0);
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
         case WM_COMMAND:
-        {
             switch (LOWORD(wParam)) {
-            case click_one:
-                MessageBox(hWnd, L"u just click btn 1", L"!!", MB_OK);
-                break;
-            case click_two:
-                MessageBox(hWnd, L"u just click btn 2", L"!!", MB_OK);
-                break;
+                case click_one:
+                    MessageBox(hWnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
+                    OnPaint(hWnd, 1);
+                    break;
+                case click_two:
+                    MessageBox(hWnd, L"Insert Minkowski Sum Demo Here", L"Minkowski Sum", MB_OK);
+                    OnPaint(hWnd, 2);
+                    break;
+                case click_three:
+                    MessageBox(hWnd, L"Insert Quickhull Demo Here", L"Quickhull", MB_OK);
+                    OnPaint(hWnd, 3);
+                    break;
+                case click_four:
+                    MessageBox(hWnd, L"Insert Point Convex Hull Demo Here", L"Point Convex Hul", MB_OK);
+                    OnPaint(hWnd, 4);
+                    break;
+                case click_five:
+                    MessageBox(hWnd, L"Insert GJK Demo Here", L"GJK", MB_OK);
+                    OnPaint(hWnd, 5);
+                    break;
             }
-        }
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
             break;
