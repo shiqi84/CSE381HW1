@@ -99,7 +99,7 @@ int WINAPI WinMain(
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         10,         // y position 
-        100,        // Button width
+        150,        // Button width
         100,        // Button height
         hWnd,       // Parent window
         (HMENU)click_one,       // No menu.
@@ -112,8 +112,8 @@ int WINAPI WinMain(
         L"Minkowski Sum",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
-        120,         // y position 
-        100,        // Button width
+        130,         // y position 
+        150,        // Button width
         100,        // Button height
         hWnd,       // Parent window
         (HMENU)click_two,       // No menu.
@@ -126,8 +126,8 @@ int WINAPI WinMain(
         L"Quickhull",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
-        230,         // y position 
-        100,        // Button width
+        250,         // y position 
+        150,        // Button width
         100,        // Button height
         hWnd,       // Parent window
         (HMENU)click_three,       // No menu.
@@ -140,8 +140,8 @@ int WINAPI WinMain(
         L"Point Convex Hull",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
-        340,         // y position 
-        100,        // Button width
+        370,         // y position 
+        150,        // Button width
         100,        // Button height
         hWnd,       // Parent window
         (HMENU)click_four,       // No menu.
@@ -154,8 +154,8 @@ int WINAPI WinMain(
         L"GJK",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
-        450,         // y position 
-        100,        // Button width
+        490,         // y position 
+        150,        // Button width
         100,        // Button height
         hWnd,       // Parent window
         (HMENU)click_five,       // No menu.
@@ -195,21 +195,46 @@ int WINAPI WinMain(
 
 void OnPaint(HDC hdc, INT flag)
 {
+    //Generate 10 random x/y coordinates for vertices
+    int xCorList[10] = {};
+    int yCorList[10] = {};
+    for (int i = 0; i < 10; i++) {
+        xCorList[i] = rand() % 1160 + 220;
+        yCorList[i] = rand() % 560 + 30;
+    }
+
     Gdiplus::Graphics gf(hdc);
     // Color(alpha, red, green, blue)
     Gdiplus::Pen redPen(Gdiplus::Color(255, 255, 0, 0));
     Gdiplus::Pen blackPen(Gdiplus::Color(255, 0, 0, 0));
+    Gdiplus::Pen whitePen(Gdiplus::Color(255, 255, 255, 255));
     Gdiplus::SolidBrush greenBrush(Gdiplus::Color(255, 0, 163, 30));
+    Gdiplus::SolidBrush blackBrush(Gdiplus::Color(255, 0, 0, 0));
+
     switch (flag) {
     case 0:
         // Draw canvas area
-        gf.DrawLine(&blackPen, 120, 0, 120, 1000);
-        gf.DrawLine(&blackPen, 130, 0, 130, 1000);
-        gf.DrawRectangle(&blackPen, 140, 50, 500, 500);
+        gf.DrawLine(&blackPen, 170, 0, 170, 1000);
+        gf.DrawLine(&blackPen, 180, 0, 180, 1000);
+        gf.FillRectangle(&blackBrush, 200, 10, 1200, 600);
+        gf.DrawRectangle(&whitePen, 200, 10, 1200, 600);
 
+        // "Canvas" Dimensions: 
+        // TL------------TR
+        // |              |
+        // |              |
+        // |              |
+        // BL------------BR
+        // TL: (200, 10)
+        // TR: (1400, 10)
+        // BL: (200, 610)
+        // BR: (1400, 610)
+     
         // Start drawing points
-        gf.FillEllipse(&greenBrush, 500, 500, 20, 20);
-        gf.DrawEllipse(&redPen, 500, 500, 20, 20);
+        for (int i = 0; i < 10; i++) {
+            gf.FillEllipse(&greenBrush, xCorList[i], yCorList[i], 20, 20);
+            gf.DrawEllipse(&redPen, xCorList[i], yCorList[i], 20, 20);
+        }
         break;
     case 1:
         gf.DrawLine(&redPen, 0, 0, 500, 500);
