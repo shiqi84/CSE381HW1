@@ -255,7 +255,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
                 case click_one:
-                    // Painting before or after MessageBox doesn't seem to affect anything
                     hdc = BeginPaint(hWnd, &ps);
                     // draw here...
                     OnPaint(hdc, 1);
