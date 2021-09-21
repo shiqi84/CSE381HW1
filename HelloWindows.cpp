@@ -6,7 +6,7 @@
 #include <string.h>
 #include <tchar.h>
 #include <gdiplus.h>
-
+#pragma comment(lib,"gdiplus.lib")
 // define event id here
 #define click_one 1101
 #define click_two 1102
@@ -273,6 +273,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // draw here...
             OnPaint(hdc, 0);
             EndPaint(hWnd, &ps);
+            MessageBox(hWnd, L"paint ", L"Minkowski Difference", MB_OK);
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -283,9 +284,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     // Painting before or after MessageBox doesn't seem to affect anything
                     hdc = BeginPaint(hWnd, &ps);
                     // draw here...
-                    OnPaint(hdc, 1);
-                    EndPaint(hWnd, &ps);
-                    MessageBox(hWnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
+                    InvalidateRect(hWnd, NULL, true);
+                   // OnPaint(hdc, 0);
+                   // EndPaint(hWnd, &ps);
+                    //MessageBox(hWnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
                     break;
                 case click_two:
                     MessageBox(hWnd, L"Insert Minkowski Sum Demo Here", L"Minkowski Sum", MB_OK);
