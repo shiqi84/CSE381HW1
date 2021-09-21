@@ -261,7 +261,6 @@ void OnPaint(HDC hdc)
 //
 //  WM_PAINT    - Paint the main window
 //  WM_DESTROY  - post a quit message and return
-//  WM_COMMAND  - respond to user interactions
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
