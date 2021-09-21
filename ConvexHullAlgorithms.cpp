@@ -21,13 +21,13 @@ INT demoSelection = 0;
 static TCHAR szWindowClass[] = _T("DesktopApp");
 
 // The string that appears in the application's title bar.
-static TCHAR szTitle[] = _T("Rocco's Windows Desktop App");
+static TCHAR szTitle[] = _T("Convex Hull Algorithms");
 
 HINSTANCE hInst;
 
 // Forward declarations of functions included in this code module:
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-void OnPaint(HDC hdc, INT flag);
+void OnPaint(HDC hdc);
 
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
@@ -261,6 +261,7 @@ void OnPaint(HDC hdc)
 //
 //  WM_PAINT    - Paint the main window
 //  WM_DESTROY  - post a quit message and return
+//  WM_COMMAND  - respond to user interactions
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
