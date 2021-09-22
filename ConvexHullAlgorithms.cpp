@@ -1,6 +1,3 @@
-// HelloWindowsDesktop.cpp
-// compile with: /D_UNICODE /DUNICODE /DWIN32 /D_WINDOWS /c
-
 #include <windows.h>
 #include <Windowsx.h>
 #include <stdlib.h>
@@ -13,7 +10,6 @@
 #pragma comment(lib, "d2d1")
 
 #include "basewin.h"
-#include "resource.h"
 
 #include <list>
 #include <memory>
@@ -25,6 +21,10 @@ using namespace std;
 #define click_three 1103
 #define click_four 1104
 #define click_five 1105
+#define IDR_ACCEL1                      101
+#define ID_TOGGLE_MODE                40002
+#define ID_DRAW_MODE                  40003
+#define ID_SELECT_MODE                40004
 
 // Global variables
 INT demoSelection = 0;
@@ -39,7 +39,6 @@ HINSTANCE hInst;
 
 // Forward declarations of functions included in this code module:
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-void OnPaint(HDC hdc);
 
 template <class T> void SafeRelease(T** ppT)
 {
@@ -50,18 +49,19 @@ template <class T> void SafeRelease(T** ppT)
     }
 }
 
-/*
+
 class DPIScale
 {
     static float scaleX;
     static float scaleY;
 
 public:
-    static void Initialize(ID2D1Factory* pFactory)
+    static void Initialize(HWND m_hwnd)
     {
         FLOAT dpiX, dpiY;
         // For some reason, this line doesn't work when you build...
-        pFactory->GetDesktopDpi(&dpiX, &dpiY);
+        dpiX = (FLOAT)GetDpiForWindow(m_hwnd);
+        dpiY = dpiX;
         // Can try replacing it with GetDpiForWindow(hWnd) if we can somehow access hWnd from here
         scaleX = dpiX / 96.0f;
         scaleY = dpiY / 96.0f;
@@ -82,172 +82,10 @@ public:
 
 float DPIScale::scaleX = 1.0f;
 float DPIScale::scaleY = 1.0f;
-*/
-int WINAPI WinMain(
-    _In_ HINSTANCE hInstance,
-    _In_opt_ HINSTANCE hPrevInstance,
-    _In_ LPSTR     lpCmdLine,
-    _In_ int       nCmdShow
-)
-{
-    // Init GDI+
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
 
-    WNDCLASSEX wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 2);
-    wcex.lpszMenuName = NULL;
-    wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-
-    if (!RegisterClassEx(&wcex))
-    {
-        MessageBox(NULL,
-            _T("Call to RegisterClassEx failed!"),
-            _T("Rocco's Windows Desktop App"),
-            NULL);
-
-        return 1;
-    }
-
-    // Store instance handle in our global variable
-    hInst = hInstance;
-
-    // The parameters to CreateWindowEx explained:
-    // WS_EX_OVERLAPPEDWINDOW : An optional extended window style.
-    // szWindowClass: the name of the application
-    // szTitle: the text that appears in the title bar
-    // WS_OVERLAPPEDWINDOW: the type of window to create
-    // CW_USEDEFAULT, CW_USEDEFAULT: initial position (x, y)
-    // 500, 100: initial size (width, length)
-    // NULL: the parent of this window
-    // NULL: this application does not have a menu bar
-    // hInstance: the first parameter from WinMain
-    // NULL: not used in this application
-    HWND hWnd = CreateWindowEx(
-        WS_EX_OVERLAPPEDWINDOW,
-        szWindowClass,
-        szTitle,
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        NULL,
-        NULL,
-        hInstance,
-        NULL
-    );
-
-    HWND hwndButton1 = CreateWindow(
-        L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Minkowski Difference",      // Button text 
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-        10,         // x position 
-        10,         // y position 
-        150,        // Button width
-        100,        // Button height
-        hWnd,       // Parent window
-        (HMENU)click_one,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-        NULL        // Pointer not needed
-    );  
-
-    HWND hwndButton2 = CreateWindow(
-        L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Minkowski Sum",      // Button text 
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-        10,         // x position 
-        130,         // y position 
-        150,        // Button width
-        100,        // Button height
-        hWnd,       // Parent window
-        (HMENU)click_two,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-        NULL        // Pointer not needed
-    );
-
-    HWND hwndButton3 = CreateWindow(
-        L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Quickhull",      // Button text 
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-        10,         // x position 
-        250,         // y position 
-        150,        // Button width
-        100,        // Button height
-        hWnd,       // Parent window
-        (HMENU)click_three,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-        NULL        // Pointer not needed
-    );
-
-    HWND hwndButton4 = CreateWindow(
-        L"BUTTON",  // Predefined class; Unicode assumed 
-        L"Point Convex Hull",      // Button text 
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-        10,         // x position 
-        370,         // y position 
-        150,        // Button width
-        100,        // Button height
-        hWnd,       // Parent window
-        (HMENU)click_four,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-        NULL        // Pointer not needed
-    );
-
-    HWND hwndButton5 = CreateWindow(
-        L"BUTTON",  // Predefined class; Unicode assumed 
-        L"GJK",      // Button text 
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-        10,         // x position 
-        490,         // y position 
-        150,        // Button width
-        100,        // Button height
-        hWnd,       // Parent window
-        (HMENU)click_five,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
-        NULL        // Pointer not needed
-    );
-
-    if (!hWnd)
-    {
-        MessageBox(NULL,
-            _T("Call to CreateWindow failed!"),
-            _T("Rocco's Windows Desktop App"),
-            NULL);
-
-        return 1;
-    }
-
-    // The parameters to ShowWindow explained:
-    // hWnd: the value returned from CreateWindow
-    // nCmdShow: the fourth parameter from WinMain
-    ShowWindow(hWnd,
-        nCmdShow);
-    UpdateWindow(hWnd);
-
-    // Main message loop:
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    //Release GDI+ resources
-    Gdiplus::GdiplusShutdown(gdiplusToken);
-    return (int)msg.wParam;
-}
-
+// Only used for reference
+/*
 void OnPaint(HDC hdc)
 {
     Gdiplus::Graphics gf(hdc);
@@ -308,83 +146,7 @@ void OnPaint(HDC hdc)
         gf.DrawEllipse(&redPen, 750, 750, 200, 200);
     }
 }
-
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  PURPOSE:  Processes messages for the main window.
-//
-//  WM_PAINT    - Paint the main window
-//  WM_DESTROY  - post a quit message and return
-//  WM_COMMAND  - respond to user interactions
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    PAINTSTRUCT ps;
-    HDC hdc;
-    // HBRUSH hBrush;
-    TCHAR greeting[] = _T("Hello there, welcome to my Window!");
-
-    switch (message)
-    {
-        case WM_PAINT:
-            hdc = BeginPaint(hWnd, &ps);
-            // draw here...
-            OnPaint(hdc);
-            EndPaint(hWnd, &ps);
-            //MessageBox(hWnd, L"paint ", L"Minkowski Difference", MB_OK);
-            break;
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            break;
-        case WM_COMMAND:
-            switch (LOWORD(wParam)) {
-                case click_one:
-                    // Set selection for demo
-                    demoSelection = 1;
-                    // Clear area and trigger repaint
-                    InvalidateRect(hWnd, NULL, true);
-                    // Pop-up Message Box
-                    MessageBox(hWnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
-                    break;
-                case click_two:
-                    // Set selection for demo
-                    demoSelection = 2;
-                    // Clear area and trigger repaint
-                    InvalidateRect(hWnd, NULL, true);
-                    // Pop-up Message Box
-                    MessageBox(hWnd, L"Insert Minkowski Sum Demo Here", L"Minkowski Sum", MB_OK);
-                    break;
-                case click_three:
-                    // Set selection for demo
-                    demoSelection = 3;
-                    // Clear area and trigger repaint
-                    InvalidateRect(hWnd, NULL, true);
-                    // Pop-up Message Box
-                    MessageBox(hWnd, L"Insert Quickhull Demo Here", L"Quickhull", MB_OK);
-                    break;
-                case click_four:
-                    // Set selection for demo
-                    demoSelection = 4;
-                    // Clear area and trigger repaint
-                    InvalidateRect(hWnd, NULL, true);
-                    // Pop-up Message Box
-                    MessageBox(hWnd, L"Insert Point Convex Hull Demo Here", L"Point Convex Hul", MB_OK);
-                    break;
-                case click_five:
-                    // Set selection for demo
-                    demoSelection = 5;
-                    // Clear area and trigger repaint
-                    InvalidateRect(hWnd, NULL, true);
-                    // Pop-up Message Box
-                    MessageBox(hWnd, L"Insert GJK Demo Here", L"GJK", MB_OK);
-                    break;
-            }
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
-            break;
-    }
-
-    return 0;
-}
+*/
 
 struct MyEllipse
 {
@@ -410,7 +172,7 @@ struct MyEllipse
     }
 };
 
-D2D1::ColorF::Enum colors[] = { D2D1::ColorF::Red };
+D2D1::ColorF::Enum colors[] = { D2D1::ColorF::Red, D2D1::ColorF::Red, D2D1::ColorF::Red };
 
 class MainWindow : public BaseWindow<MainWindow>
 {
@@ -468,8 +230,9 @@ public:
     {
     }
 
-    PCWSTR  ClassName() const { return L"Circle Window Class"; }
+    PCWSTR  ClassName() const { return L"Convex Hull Algorithms"; }
     LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    HWND    GetHWND() { return m_hwnd; }
 };
 
 HRESULT MainWindow::CreateGraphicsResources()
@@ -515,7 +278,7 @@ void MainWindow::OnPaint()
         pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::LightSeaGreen));
 
         // Start a new ellipse.
-        InsertEllipse(1.0f, 1.0f);
+        InsertEllipse(1.0, 1.0f);
 
         for (auto i = ellipses.begin(); i != ellipses.end(); ++i)
         {
@@ -554,7 +317,6 @@ void MainWindow::Resize()
 
 void MainWindow::OnLButtonDown(int pixelX, int pixelY, DWORD flags)
 {
-    /*
     const float dipX = DPIScale::PixelsToDipsX(pixelX);
     const float dipY = DPIScale::PixelsToDipsY(pixelY);
 
@@ -586,7 +348,6 @@ void MainWindow::OnLButtonDown(int pixelX, int pixelY, DWORD flags)
         }
     }
     InvalidateRect(m_hwnd, NULL, FALSE);
-    */
 }
 
 void MainWindow::OnLButtonUp()
@@ -606,7 +367,6 @@ void MainWindow::OnLButtonUp()
 
 void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
 {
-    /*
     const float dipX = DPIScale::PixelsToDipsX(pixelX);
     const float dipY = DPIScale::PixelsToDipsY(pixelY);
 
@@ -630,7 +390,6 @@ void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
         }
         InvalidateRect(m_hwnd, NULL, FALSE);
     }
-    */
 }
 
 
@@ -663,6 +422,12 @@ void MainWindow::OnKeyDown(UINT vkey)
 
     case VK_DOWN:
         MoveSelection(0, 1);
+        break;
+    case VK_F1:
+        SetMode(DrawMode);
+        break;
+    case VK_F2:
+        SetMode(SelectMode);
         break;
     }
 }
@@ -726,28 +491,32 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
 {
     MainWindow win;
 
+    // Init GDI+
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    ULONG_PTR gdiplusToken;
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
     if (!win.Create(L"Convex Hull Algorithms", WS_OVERLAPPEDWINDOW))
     {
         return 0;
     }
 
-    /* Maybe create the buttons here?
-    * Doesn't let me use CreateWindow() here, maybe CreateWindowEx() but the parameters are different...
-    HWND hwndButton1 = CreateWindow(
-        L"BUTTON",  // Predefined class; Unicode assumed 
+    HWND hwndButton1 = CreateWindowEx(
+        NULL,
+        L"BUTTON", // Predefined class; Unicode assumed 
         L"Minkowski Difference",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
         10,         // x position 
         10,         // y position 
         150,        // Button width
         100,        // Button height
-        m_hwnd,       // Parent window
+        win.GetHWND(),       // Parent window
         (HMENU)click_one,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+        (HINSTANCE)GetWindowLongPtr(win.GetHWND(), GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
-
-    HWND hwndButton2 = CreateWindow(
+    HWND hwndButton2 = CreateWindowEx(
+        NULL, 
         L"BUTTON",  // Predefined class; Unicode assumed 
         L"Minkowski Sum",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
@@ -755,13 +524,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
         130,         // y position 
         150,        // Button width
         100,        // Button height
-        hWnd,       // Parent window
+        win.GetHWND(),       // Parent window
         (HMENU)click_two,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+        (HINSTANCE)GetWindowLongPtr(win.GetHWND(), GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
 
-    HWND hwndButton3 = CreateWindow(
+    HWND hwndButton3 = CreateWindowEx(
+        NULL, 
         L"BUTTON",  // Predefined class; Unicode assumed 
         L"Quickhull",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
@@ -769,13 +539,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
         250,         // y position 
         150,        // Button width
         100,        // Button height
-        hWnd,       // Parent window
+        win.GetHWND(),       // Parent window
         (HMENU)click_three,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+        (HINSTANCE)GetWindowLongPtr(win.GetHWND(), GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
 
-    HWND hwndButton4 = CreateWindow(
+    HWND hwndButton4 = CreateWindowEx(
+        NULL, 
         L"BUTTON",  // Predefined class; Unicode assumed 
         L"Point Convex Hull",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
@@ -783,13 +554,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
         370,         // y position 
         150,        // Button width
         100,        // Button height
-        hWnd,       // Parent window
+        win.GetHWND(),       // Parent window
         (HMENU)click_four,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+        (HINSTANCE)GetWindowLongPtr(win.GetHWND(), GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
 
-    HWND hwndButton5 = CreateWindow(
+    HWND hwndButton5 = CreateWindowEx(
+        NULL, 
         L"BUTTON",  // Predefined class; Unicode assumed 
         L"GJK",      // Button text 
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
@@ -797,12 +569,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
         490,         // y position 
         150,        // Button width
         100,        // Button height
-        hWnd,       // Parent window
+        win.GetHWND(),       // Parent window
         (HMENU)click_five,       // No menu.
-        (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+        (HINSTANCE)GetWindowLongPtr(win.GetHWND(), GWLP_HINSTANCE),
         NULL        // Pointer not needed
     );
-*/
+
     HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCEL1));
 
     ShowWindow(win.Window(), nCmdShow);
@@ -816,6 +588,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
             DispatchMessage(&msg);
         }
     }
+
+    //Release GDI+ resources
+    Gdiplus::GdiplusShutdown(gdiplusToken);
+
     return 0;
 }
 
@@ -829,8 +605,8 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             return -1;  // Fail CreateWindowEx.
         }
-        //DPIScale::Initialize(pFactory);
-        SetMode(SelectMode);
+        DPIScale::Initialize(m_hwnd);
+        SetMode(DrawMode);
         return 0;
 
     case WM_DESTROY:
@@ -874,6 +650,9 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
+        /*
+        * These cases don't seem to do anything
+        * Replaced by checking VK_F1, VK_F2, and VK_F3 in OnKeyDown()
         case ID_DRAW_MODE:
             SetMode(DrawMode);
             break;
@@ -891,6 +670,47 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 SetMode(DrawMode);
             }
+            break;
+        */
+        case click_one:
+            // Set selection for demo
+            demoSelection = 1;
+            // Clear area and trigger repaint
+            InvalidateRect(m_hwnd, NULL, true);
+            // Pop-up Message Box
+            MessageBox(m_hwnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
+            break;
+        case click_two:
+            // Set selection for demo
+            demoSelection = 2;
+            // Clear area and trigger repaint
+            InvalidateRect(m_hwnd, NULL, true);
+            // Pop-up Message Box
+            MessageBox(m_hwnd, L"Insert Minkowski Sum Demo Here", L"Minkowski Sum", MB_OK);
+            break;
+        case click_three:
+            // Set selection for demo
+            demoSelection = 3;
+            // Clear area and trigger repaint
+            InvalidateRect(m_hwnd, NULL, true);
+            // Pop-up Message Box
+            MessageBox(m_hwnd, L"Insert Quickhull Demo Here", L"Quickhull", MB_OK);
+            break;
+        case click_four:
+            // Set selection for demo
+            demoSelection = 4;
+            // Clear area and trigger repaint
+            InvalidateRect(m_hwnd, NULL, true);
+            // Pop-up Message Box
+            MessageBox(m_hwnd, L"Insert Point Convex Hull Demo Here", L"Point Convex Hul", MB_OK);
+            break;
+        case click_five:
+            // Set selection for demo
+            demoSelection = 5;
+            // Clear area and trigger repaint
+            InvalidateRect(m_hwnd, NULL, true);
+            // Pop-up Message Box
+            MessageBox(m_hwnd, L"Insert GJK Demo Here", L"GJK", MB_OK);
             break;
         }
         return 0;
