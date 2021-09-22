@@ -172,7 +172,7 @@ struct MyEllipse
     }
 };
 
-D2D1::ColorF::Enum colors[] = { D2D1::ColorF::Red, D2D1::ColorF::Red, D2D1::ColorF::Red };
+D2D1::ColorF::Enum colors[] = { D2D1::ColorF::Green, D2D1::ColorF::Green, D2D1::ColorF::Green };
 
 class MainWindow : public BaseWindow<MainWindow>
 {
@@ -185,9 +185,9 @@ class MainWindow : public BaseWindow<MainWindow>
 
     HCURSOR                 hCursor;
 
-    ID2D1Factory* pFactory;
-    ID2D1HwndRenderTarget* pRenderTarget;
-    ID2D1SolidColorBrush* pBrush;
+    ID2D1Factory*           pFactory;
+    ID2D1HwndRenderTarget*  pRenderTarget;
+    ID2D1SolidColorBrush*   pBrush;
     D2D1_POINT_2F           ptMouse;
 
     Mode                    mode;
@@ -216,7 +216,7 @@ class MainWindow : public BaseWindow<MainWindow>
     void    MoveSelection(float x, float y);
     HRESULT CreateGraphicsResources();
     void    DiscardGraphicsResources();
-    void    OnPaint();
+    void    OnPaint(HDC hdc);
     void    Resize();
     void    OnLButtonDown(int pixelX, int pixelY, DWORD flags);
     void    OnLButtonUp();
@@ -265,20 +265,125 @@ void MainWindow::DiscardGraphicsResources()
     SafeRelease(&pBrush);
 }
 
-void MainWindow::OnPaint()
+void MainWindow::OnPaint(HDC hdc)
 {
     HRESULT hr = CreateGraphicsResources();
     if (SUCCEEDED(hr))
     {
         PAINTSTRUCT ps;
-        BeginPaint(m_hwnd, &ps);
+        D2D1_SIZE_F rtSize = pRenderTarget->GetSize();
+        static const WCHAR demoTitle[] = L"Convex Hull Algorithms by Rocco Persico and Wan Shiqi";
+
+        //BeginPaint(m_hwnd, &ps);
 
         pRenderTarget->BeginDraw();
 
-        pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::LightSeaGreen));
+        // Clear the canvas
+        pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::LightGray));
+
+        // Change brush color to black
+        pBrush->SetColor(D2D1::ColorF(D2D1::ColorF::Black));
+        
+        // Draw lines
+        pRenderTarget->DrawLine(
+            D2D1::Point2F(170.0f, 0.0f),
+            D2D1::Point2F(170.0f, 1000.0f),
+            pBrush,
+            0.5f
+        );;
+        pRenderTarget->DrawLine(
+            D2D1::Point2F(180.0f, 0.0f),
+            D2D1::Point2F(180.0f, 1000.0f),
+            pBrush,
+            0.5f
+        );;
+
+        // Create canvas rectange
+        D2D1_RECT_F rectangle1 = D2D1::RectF(
+            200.0f, 10.0f, 1200.0f, 600.0f
+        );
+
+        // Draw canvas outline.
+        pRenderTarget->DrawRectangle(&rectangle1, pBrush);
+
+        // Change brush color to white
+        pBrush->SetColor(D2D1::ColorF(D2D1::ColorF::White));
+
+        // Fill canvas area.
+        pRenderTarget->FillRectangle(&rectangle1, pBrush);
+
+
+        // Draw canvas area
+        //gf.DrawLine(&blackPen, 170, 0, 170, 1000);
+        //gf.DrawLine(&blackPen, 180, 0, 180, 1000);
+        //gf.FillRectangle(&blackBrush, 200, 10, 1200, 600);
+        //gf.DrawRectangle(&whitePen, 200, 10, 1200, 600);
+
+        // "Canvas" Dimensions: 
+        // TL------------TR
+        // |              |
+        // |              |
+        // |              |
+        // BL------------BR
+        // TL: (200, 10)
+        // TR: (1400, 10)
+        // BL: (200, 610)
+        // BR: (1400, 610)
+
+        //Generate 10 random x/y coordinates for vertices
+        /*
+        int xCorList[10] = {};
+        int yCorList[10] = {};
+        for (int i = 0; i < 10; i++) {
+            xCorList[i] = rand() % 1160 + 220;
+            yCorList[i] = rand() % 560 + 30;
+        }
+
+        for (int i = 0; i < 10; i++) {
+            gf.FillEllipse(&greenBrush, xCorList[i], yCorList[i], 20, 20);
+            gf.DrawEllipse(&redPen, xCorList[i], yCorList[i], 20, 20);
+        }
+        */
+
+        // Different ways to paint canvas for different demos
+        switch (demoSelection) {
+        case 0:
+            // Draw title text
+            /*
+            pRenderTarget->DrawText(
+                demoTitle,
+                ARRAYSIZE(demoTitle) - 1,
+                0,
+                D2D1::RectF(0.0f, 0.0f, 100.0f, 100.0f),
+                pBrush
+                );*/
+            // Start drawing points
+            for (int i = 0; i < 10; i++) {
+                float x = rand() % 1160 + 220;
+                float y = rand() % 560 + 30;
+                InsertEllipse(x, y);
+            }
+            demoSelection = 1;
+            break;
+        case 1:
+            // Insert Minkowski Difference Demo Here
+            break;
+        case 2:
+            // Insert Minkowski Sum Demo Here
+            break;
+        case 3:
+            // Insert QuickHull Demo Here
+            break;
+        case 4:
+            // Insert Point Convex Hull Demo Here
+            break;
+        case 5:
+            // Insert GJK Demo Here
+            break;
+        }
 
         // Start a new ellipse.
-        InsertEllipse(1.0, 1.0f);
+        // InsertEllipse(1.0, 1.0f);
 
         for (auto i = ellipses.begin(); i != ellipses.end(); ++i)
         {
@@ -296,7 +401,7 @@ void MainWindow::OnPaint()
         {
             DiscardGraphicsResources();
         }
-        EndPaint(m_hwnd, &ps);
+        //EndPaint(m_hwnd, &ps);
     }
 }
 
@@ -423,12 +528,19 @@ void MainWindow::OnKeyDown(UINT vkey)
     case VK_DOWN:
         MoveSelection(0, 1);
         break;
+
     case VK_F1:
         SetMode(DrawMode);
         break;
+
     case VK_F2:
         SetMode(SelectMode);
         break;
+
+    case VK_F3:
+        SetMode(DragMode);
+        break;
+
     }
 }
 
@@ -441,7 +553,7 @@ HRESULT MainWindow::InsertEllipse(float x, float y)
             shared_ptr<MyEllipse>(new MyEllipse()));
 
         Selection()->ellipse.point = ptMouse = D2D1::Point2F(x, y);
-        Selection()->ellipse.radiusX = Selection()->ellipse.radiusY = 2.0f;
+        Selection()->ellipse.radiusX = Selection()->ellipse.radiusY = 5.0f;
         Selection()->color = D2D1::ColorF(colors[nextColor]);
 
         nextColor = (nextColor + 1) % ARRAYSIZE(colors);
@@ -481,7 +593,22 @@ void MainWindow::SetMode(Mode m)
 {
     mode = m;
 
-    LPWSTR cursor = IDC_CROSS;
+    LPWSTR cursor{};
+    switch (mode)
+    {
+    case DrawMode:
+        cursor = IDC_CROSS;
+        break;
+
+    case SelectMode:
+        cursor = IDC_HAND;
+        break;
+
+    case DragMode:
+        cursor = IDC_SIZEALL;
+        break;
+    }
+
     hCursor = LoadCursor(NULL, cursor);
     SetCursor(hCursor);
 }
@@ -597,6 +724,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
 
 LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc;
+    PAINTSTRUCT ps;
     switch (uMsg)
     {
     case WM_CREATE:
@@ -606,7 +735,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             return -1;  // Fail CreateWindowEx.
         }
         DPIScale::Initialize(m_hwnd);
-        SetMode(DrawMode);
+        SetMode(SelectMode);
         return 0;
 
     case WM_DESTROY:
@@ -616,7 +745,9 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_PAINT:
-        OnPaint();
+        hdc = BeginPaint(m_hwnd, &ps);
+        OnPaint(hdc);
+        EndPaint(m_hwnd, &ps);
         return 0;
 
     case WM_SIZE:
