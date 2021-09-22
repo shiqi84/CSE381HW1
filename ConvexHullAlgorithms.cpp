@@ -3,10 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tchar.h>
-#include <gdiplus.h>
 #include <d2d1.h>
 
-#pragma comment(lib,"gdiplus.lib")
 #pragma comment(lib, "d2d1")
 
 #include "basewin.h"
@@ -553,7 +551,7 @@ HRESULT MainWindow::InsertEllipse(float x, float y)
             shared_ptr<MyEllipse>(new MyEllipse()));
 
         Selection()->ellipse.point = ptMouse = D2D1::Point2F(x, y);
-        Selection()->ellipse.radiusX = Selection()->ellipse.radiusY = 5.0f;
+        Selection()->ellipse.radiusX = Selection()->ellipse.radiusY = 8.0f;
         Selection()->color = D2D1::ColorF(colors[nextColor]);
 
         nextColor = (nextColor + 1) % ARRAYSIZE(colors);
@@ -617,11 +615,6 @@ void MainWindow::SetMode(Mode m)
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
 {
     MainWindow win;
-
-    // Init GDI+
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
     if (!win.Create(L"Convex Hull Algorithms", WS_OVERLAPPEDWINDOW))
     {
@@ -715,9 +708,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
             DispatchMessage(&msg);
         }
     }
-
-    //Release GDI+ resources
-    Gdiplus::GdiplusShutdown(gdiplusToken);
 
     return 0;
 }
