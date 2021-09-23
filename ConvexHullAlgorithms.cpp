@@ -23,7 +23,11 @@ using namespace std;
 #define ID_TOGGLE_MODE                40002
 #define ID_DRAW_MODE                  40003
 #define ID_SELECT_MODE                40004
-
+struct Vector2D
+{
+    float x;
+    float y;
+};
 // Global variables
 INT demoSelection = 0;
 
@@ -32,7 +36,7 @@ static TCHAR szWindowClass[] = _T("DesktopApp");
 
 // The string that appears in the application's title bar.
 static TCHAR szTitle[] = _T("Convex Hull Algorithms");
-
+static  Vector2D Vec[6];
 HINSTANCE hInst;
 
 // Forward declarations of functions included in this code module:
@@ -208,7 +212,7 @@ class MainWindow : public BaseWindow<MainWindow>
 
     void    ClearSelection() { selection = ellipses.end(); }
     HRESULT InsertEllipse(float x, float y);
-
+    void    DrawPolygon(Vector2D Vec[], int size);
     BOOL    HitTest(float x, float y);
     void    SetMode(Mode m);
     void    MoveSelection(float x, float y);
@@ -217,6 +221,8 @@ class MainWindow : public BaseWindow<MainWindow>
     void    OnPaint(HDC hdc);
     void    Resize();
     void    OnLButtonDown(int pixelX, int pixelY, DWORD flags);
+    bool    InsidePolygon(Vector2D polygon[], Vector2D point, int PolySize);
+    bool    IsIntersect(Vector2D pstart1, Vector2D pend1, Vector2D pstart2, Vector2D pend2);
     void    OnLButtonUp();
     void    OnMouseMove(int pixelX, int pixelY, DWORD flags);
     void    OnKeyDown(UINT vkey);
@@ -300,7 +306,6 @@ void MainWindow::OnPaint(HDC hdc)
         D2D1_RECT_F rectangle1 = D2D1::RectF(
             200.0f, 10.0f, 1200.0f, 600.0f
         );
-
         // Draw canvas outline.
         pRenderTarget->DrawRectangle(&rectangle1, pBrush);
 
@@ -310,6 +315,14 @@ void MainWindow::OnPaint(HDC hdc)
         // Fill canvas area.
         pRenderTarget->FillRectangle(&rectangle1, pBrush);
 
+      
+        Vec[0] = { 300.0f,40.0f };
+        Vec[1] = { 400.0f,120.0f };
+        Vec[2] = { 600.0f,240.0f };
+        Vec[3] = { 330.0f,340.0f };
+        Vec[4] = { 300.0f,440.0f };
+        Vec[5] = { 250.0f,240.0f };
+        DrawPolygon(Vec,sizeof(Vec)/sizeof(Vec[0]));
 
         // Draw canvas area
         //gf.DrawLine(&blackPen, 170, 0, 170, 1000);
@@ -360,6 +373,7 @@ void MainWindow::OnPaint(HDC hdc)
                 float x = rand() % 1160 + 220;
                 float y = rand() % 560 + 30;
                 InsertEllipse(x, y);
+                //Insert
             }
             demoSelection = 1;
             break;
@@ -453,6 +467,46 @@ void MainWindow::OnLButtonDown(int pixelX, int pixelY, DWORD flags)
     InvalidateRect(m_hwnd, NULL, FALSE);
 }
 
+
+bool MainWindow::InsidePolygon(Vector2D polygon[], Vector2D point, int PolySize) {
+
+  //  return (point.x > 500) ? true : false;
+    int count = 0;
+    for (int i = 0; i < PolySize-1; i++) {
+        if (IsIntersect(polygon[i], polygon[i + 1], point, { point.x,-2000.0f })) {
+            count += 1;
+        }
+    }
+    if (IsIntersect(polygon[5], polygon[0], point, { point.x,-2000.0f })) {
+        count += 1;
+    }
+    return  (count%2==1) ? true : false;
+    
+}
+bool MainWindow::IsIntersect(Vector2D pstart1, Vector2D pend1, Vector2D pstart2, Vector2D pend2) {
+    float px1 = pstart1.x;
+    float py1 = pstart1.y;
+    float px2 = pend1.x;
+    float py2 = pend1.y;
+    float px3 = pstart2.x;
+    float py3 = pstart2.y;
+    float px4 = pend2.x;
+    float py4 = pend2.y;
+
+    bool flag = false;
+    double d = (px2 - px1) * (py4 - py3) - (py2 - py1) * (px4 - px3);
+    if (d != 0)
+    {
+        double r = ((py1 - py3) * (px4 - px3) - (px1 - px3) * (py4 - py3)) / d;
+        double s = ((py1 - py3) * (px2 - px1) - (px1 - px3) * (py2 - py1)) / d;
+        if ((r >= 0) && (r <= 1) && (s >= 0) && (s <= 1))
+        {
+            flag = true;
+        }
+    }
+    return flag;
+
+}
 void MainWindow::OnLButtonUp()
 {
     if ((mode == DrawMode) && Selection())
@@ -490,6 +544,17 @@ void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
             // Move the ellipse.
             Selection()->ellipse.point.x = dipX + ptMouse.x;
             Selection()->ellipse.point.y = dipY + ptMouse.y;
+            Vector2D point = { Selection()->ellipse.point.x , Selection()->ellipse.point.y };
+                if (InsidePolygon(Vec, point,6)) {
+                    Selection()->color.r = 100.0f;
+                    Selection()->color.g = 0.0;
+                    Selection()->color.b = 0.0;
+                }
+                else {
+                    Selection()->color.r = 0.0f;
+                    Selection()->color.g = 100.0;
+                    Selection()->color.b = 0.0;
+                }
         }
         InvalidateRect(m_hwnd, NULL, FALSE);
     }
@@ -549,7 +614,7 @@ HRESULT MainWindow::InsertEllipse(float x, float y)
         selection = ellipses.insert(
             ellipses.end(),
             shared_ptr<MyEllipse>(new MyEllipse()));
-
+        
         Selection()->ellipse.point = ptMouse = D2D1::Point2F(x, y);
         Selection()->ellipse.radiusX = Selection()->ellipse.radiusY = 8.0f;
         Selection()->color = D2D1::ColorF(colors[nextColor]);
@@ -563,6 +628,27 @@ HRESULT MainWindow::InsertEllipse(float x, float y)
     return S_OK;
 }
 
+void MainWindow::DrawPolygon(struct Vector2D Vec[], int size){
+    pBrush->SetColor(D2D1::ColorF(D2D1::ColorF::Black));
+   
+   
+
+    for (int i = 0; i <5; i++) {
+        pRenderTarget->DrawLine(
+            D2D1::Point2F(Vec[i].x, Vec[i].y),
+            D2D1::Point2F(Vec[i+1].x, Vec[i+1].y),
+            pBrush,
+            0.5f
+        );
+    }
+    pRenderTarget->DrawLine(
+        D2D1::Point2F(Vec[size-1].x, Vec[size - 1].y),
+        D2D1::Point2F(Vec[0].x, Vec[0].y),
+        pBrush,
+        0.5f
+    );
+   
+}
 
 BOOL MainWindow::HitTest(float x, float y)
 {

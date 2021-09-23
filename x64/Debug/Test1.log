@@ -1,0 +1,5 @@
+﻿  ConvexHullAlgorithms.cpp
+C:\Users\Wan Shiqi\Desktop\381\CSE381HW1\ConvexHullAlgorithms.cpp(373,25): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+C:\Users\Wan Shiqi\Desktop\381\CSE381HW1\ConvexHullAlgorithms.cpp(374,25): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+C:\Users\Wan Shiqi\Desktop\381\CSE381HW1\ConvexHullAlgorithms.cpp(277,21): warning C4101: “ps”: 未引用的局部变量
+  Test1.vcxproj -> C:\Users\Wan Shiqi\Desktop\381\CSE381HW1\x64\Debug\ConvexHullAlgorithms.exe
