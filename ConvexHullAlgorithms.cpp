@@ -5,7 +5,6 @@
 #include <tchar.h>
 #include <d2d1.h>
 #include <set>
-#include <iostream>
 #pragma comment(lib, "d2d1")
 
 #include "basewin.h"
@@ -64,47 +63,7 @@ struct MyPolygon
         D2D1_POINT_2F point;
         point.x = x;
         point.y = y;
-        return InsidePolygon(point);
-    }
-
-    BOOL InsidePolygon(D2D1_POINT_2F point) {
-
-        //  return (point.x > 500) ? true : false;
-        int count = 0;
-        for (int i = 0; i < polygon.size() - 1; i++) {
-            if (IsIntersect(polygon[i], polygon[i + 1], point, { point.x,-2000.0f })) {
-                count += 1;
-            }
-        }
-        if (IsIntersect(polygon[5], polygon[0], point, { point.x,-2000.0f })) {
-            count += 1;
-        }
-        return  (count % 2 == 1) ? true : false;
-
-    }
-    BOOL IsIntersect(D2D1_POINT_2F pstart1, D2D1_POINT_2F pend1, D2D1_POINT_2F pstart2, D2D1_POINT_2F pend2) {
-        float px1 = pstart1.x;
-        float py1 = pstart1.y;
-        float px2 = pend1.x;
-        float py2 = pend1.y;
-        float px3 = pstart2.x;
-        float py3 = pstart2.y;
-        float px4 = pend2.x;
-        float py4 = pend2.y;
-
-        bool flag = false;
-        double d = (px2 - px1) * (py4 - py3) - (py2 - py1) * (px4 - px3);
-        if (d != 0)
-        {
-            double r = ((py1 - py3) * (px4 - px3) - (px1 - px3) * (py4 - py3)) / d;
-            double s = ((py1 - py3) * (px2 - px1) - (px1 - px3) * (py2 - py1)) / d;
-            if ((r >= 0) && (r <= 1) && (s >= 0) && (s <= 1))
-            {
-                flag = !flag;
-            }
-        }
-        return flag;
-
+        return contains(point);
     }
 
     // returns if p lies on line segment p1->p2
@@ -114,8 +73,9 @@ struct MyPolygon
         return false;
     }
 
-    // returns orientation of three points
+    // returns the orientation of three points
     int orientation(D2D1_POINT_2F p1, D2D1_POINT_2F p2, D2D1_POINT_2F p3) {
+        // calculate slope of both line segments
         float val = (p2.y - p1.y) * (p3.x - p2.x) - (p2.x - p1.x) * (p3.y - p2.y);
         if (val == 0)
             return 0;           // colinear
@@ -135,23 +95,23 @@ struct MyPolygon
 
         // if the general case, or any special cases are met, line segments are intersecting
 
-        // general case (when orientation1/orientation2 are different and orientation3/orientation4 are different
+        // general case - when orientation1/orientation2 are different and orientation3/orientation4 are different
         if (orientation1 != orientation2 && orientation3 != orientation4)
             return true;
 
-        // special case (when orientation1 is colinear and start2 lies on line segment start1->end1
+        // special case - when orientation1 is colinear and start2 lies on line segment start1->end1
         if (orientation1 == 0 && onSegment(start1, start2, end1))
             return true;
 
-        // special case (when orientation2 is colinear and end2 lies on line segment start1->end1
+        // special case - when orientation2 is colinear and end2 lies on line segment start1->end1
         if (orientation2 == 0 && onSegment(start1, end2, end1))
             return true;
 
-        // special case (when orientation3 is colinear and start1 lies on line segment start2->end2
+        // special case - when orientation3 is colinear and start1 lies on line segment start2->end2
         if (orientation3 == 0 && onSegment(start2, start1, end2))
             return true;
 
-        // special case (when orientation4 is colinear and end1 lies on line segment start2->end2
+        // special case - when orientation4 is colinear and end1 lies on line segment start2->end2
         if (orientation4 == 0 && onSegment(start2, end1, end2))
             return true;
 
@@ -160,24 +120,29 @@ struct MyPolygon
 
     // returns if this polygon contains the given point
     BOOL contains(D2D1_POINT_2F p) {
+        // create end-point for ray tracing
         D2D1_POINT_2F tmp = D2D1::Point2F(5000.0f, p.y);
         int intersections = 0;
         int i = 0;
         do {
             int next = (i + 1) % polygon.size();
+            // does this ray intersect with line segment polygon[i]->polygon[next]?
             if (intersecting(polygon[i], polygon[next], p, tmp)) {
+                // if p colinear with line segment polygon[i]->polygon[next] and lies on segment, point is in polygon
                 if (orientation(polygon[i], p, polygon[next]) == 0)
                     return onSegment(polygon[i], p, polygon[next]);
                 intersections++;
             }
             i = next;
         } while (i != 0);
+        // if number of intersections is odd, point is in polygon. otherwise, it is not
         return (intersections % 2 == 1);
     }
 };
 MyPolygon testingPolygon;
 MyPolygon testingPolygon1;
 MyPolygon testingPolygon2;
+
 struct Vector2D
 {
     float x;
@@ -253,70 +218,6 @@ float DPIScale::scaleX = 1.0f;
 float DPIScale::scaleY = 1.0f;
 
 
-// Only used for reference
-/*
-void OnPaint(HDC hdc)
-{
-    Gdiplus::Graphics gf(hdc);
-    // Color(alpha, red, green, blue)
-    Gdiplus::Pen redPen(Gdiplus::Color(255, 255, 0, 0));
-    Gdiplus::Pen blackPen(Gdiplus::Color(255, 0, 0, 0));
-    Gdiplus::Pen whitePen(Gdiplus::Color(255, 255, 255, 255));
-    Gdiplus::SolidBrush greenBrush(Gdiplus::Color(255, 0, 163, 30));
-    Gdiplus::SolidBrush blackBrush(Gdiplus::Color(255, 0, 0, 0));
-
-    // Draw canvas area
-    gf.DrawLine(&blackPen, 170, 0, 170, 1000);
-    gf.DrawLine(&blackPen, 180, 0, 180, 1000);
-    gf.FillRectangle(&blackBrush, 200, 10, 1200, 600);
-    gf.DrawRectangle(&whitePen, 200, 10, 1200, 600);
-
-    // "Canvas" Dimensions:
-    // TL------------TR
-    // |              |
-    // |              |
-    // |              |
-    // BL------------BR
-    // TL: (200, 10)
-    // TR: (1400, 10)
-    // BL: (200, 610)
-    // BR: (1400, 610)
-
-    //Generate 10 random x/y coordinates for vertices
-    int xCorList[10] = {};
-    int yCorList[10] = {};
-    for (int i = 0; i < 10; i++) {
-        xCorList[i] = rand() % 1160 + 220;
-        yCorList[i] = rand() % 560 + 30;
-    }
-
-    // Different ways to paint canvas for different demos
-    switch (demoSelection) {
-    case 0:
-        // Start drawing points
-        for (int i = 0; i < 10; i++) {
-            gf.FillEllipse(&greenBrush, xCorList[i], yCorList[i], 20, 20);
-            gf.DrawEllipse(&redPen, xCorList[i], yCorList[i], 20, 20);
-        }
-        break;
-    case 1:
-        gf.DrawLine(&redPen, 0, 0, 500, 500);
-        break;
-    case 2:
-        gf.FillRectangle(&greenBrush, 400, 200, 100, 100);
-        break;
-    case 3:
-        gf.DrawRectangle(&redPen, 450, 400, 100, 150);
-        break;
-    case 4:
-        gf.FillEllipse(&greenBrush, 500, 500, 100, 100);
-        break;
-    case 5:
-        gf.DrawEllipse(&redPen, 750, 750, 200, 200);
-    }
-}
-*/
-
 struct MyEllipse
 {
     D2D1_ELLIPSE    ellipse;
@@ -363,10 +264,8 @@ class MainWindow : public BaseWindow<MainWindow>
     size_t                  nextColor;
 
     list<shared_ptr<MyEllipse>>             ellipses;
-    list<shared_ptr<MyPolygon>>             polygons;
 
     list<shared_ptr<MyEllipse>>::iterator   selection;
-    list<shared_ptr<MyPolygon>>::iterator   polySelection;
 
     shared_ptr<MyEllipse> Selection()
     {
@@ -380,20 +279,7 @@ class MainWindow : public BaseWindow<MainWindow>
         }
     }
 
-    shared_ptr<MyPolygon> PolySelection()
-    {
-        if (polySelection == polygons.end())
-        {
-            return nullptr;
-        }
-        else
-        {
-            return (*polySelection);
-        }
-    }
-
     void    ClearSelection() { selection = ellipses.end(); }
-    void    ClearPolySelection() { polySelection = polygons.end(); }
     HRESULT InsertEllipse(float x, float y);
     BOOL    HitTest(float x, float y);
     void    SetMode(Mode m);
@@ -842,20 +728,6 @@ void MainWindow::OnPaint(HDC hdc)
                     ellipses.clear();
                     ModeFlag = 4;
                     GenerateRandomPoints(1);
-
-                    /*
-                    // Draw random polygon
-                        std::vector<D2D1_POINT_2F> points;
-                        D2D1_POINT_2F temp;
-                        for (int i = 0; i < 8; i++) {
-                            temp = D2D1::Point2F(rand() % 900 + 300, rand() % 550 + 50);
-                            points.push_back(temp);
-                        }
-                        ClockwiseSortPoints(points);
-                        testingPolygon.polygon = points;
-                        testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
-                        testingPolygon.Draw(pRenderTarget, pBrush);
-                    */
                 }
                 break;
             }
@@ -975,17 +847,13 @@ void MainWindow::OnPaint(HDC hdc)
 
                 ClockwiseSortPoints(tmp);
                 testingPolygon.polygon = tmp;
-                //InsertEllipse(750.0f, 350.0f);
-                bool colliding = false;
-                colliding = testingPolygon.contains(D2D1::Point2F(750.0f, 350.0f));
-                cout << colliding;
+                bool colliding = testingPolygon.contains(D2D1::Point2F(750.0f, 350.0f));
                 if (colliding) {
                     testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::Yellow));
                 }
                 else {
                     testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
                 }
-                //testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
                 testingPolygon.Draw(pRenderTarget, pBrush);
                 break;
             }
@@ -1054,7 +922,7 @@ void MainWindow::OnLButtonDown(int pixelX, int pixelY, DWORD flags)
             ptMouse = Selection()->ellipse.point;
             ptMouse.x -= dipX;
             ptMouse.y -= dipY;
-
+   
             SetMode(DragMode);
         }
 
@@ -1215,26 +1083,6 @@ void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
                     }
                 }
 
-                /*
-                if (demoSelection == 5) {
-                    if (testingPolygon.HitTest(750.0f, 350.0f)) {
-                        //testingPolygon.color = D2D1::ColorF(D2D1::ColorF::Yellow);
-                        //testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::Yellow));
-                        testingPolygon.color.r = 235.0f;
-                        testingPolygon.color.g = 245.0f;
-                        testingPolygon.color.b = 39.0f;
-                        testingPolygon.Draw(pRenderTarget, pBrush);
-                    }
-                    else {
-                        //testingPolygon.color = D2D1::ColorF(D2D1::ColorF::LightGreen);
-                        //testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightGreen));
-                        testingPolygon.color.r = 58.0f;
-                        testingPolygon.color.g = 247.0f;
-                        testingPolygon.color.b = 20.0f;
-                        testingPolygon.Draw(pRenderTarget, pBrush);
-                    }
-                }*/
-
                 Selection()->ellipse.point.x = dipX + ptMouse.x;
                 Selection()->ellipse.point.y = dipY + ptMouse.y;
                 D2D1_POINT_2F  point = { Selection()->ellipse.point.x , Selection()->ellipse.point.y };
@@ -1268,26 +1116,7 @@ void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
 
                 }
             }
-
-
         }
-
-        /*
-        if (demoSelection == 5) {
-            if (testingPolygon.InsidePolygon(D2D1::Point2F(750.0f, 350.0f))) {
-                testingPolygon.color.r = 235.0f;
-                testingPolygon.color.g = 245.0f;
-                testingPolygon.color.b = 39.0f;
-                //testingPolygon.Draw(pRenderTarget, pBrush);
-            }
-            else {
-                testingPolygon.color.r = 58.0f;
-                testingPolygon.color.g = 247.0f;
-                testingPolygon.color.b = 20.0f;
-                //testingPolygon.Draw(pRenderTarget, pBrush);
-            }
-        }*/
-
         InvalidateRect(m_hwnd, NULL, FALSE);
     }
 }
@@ -1651,7 +1480,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Clear area and trigger repaint
             InvalidateRect(m_hwnd, NULL, true);
             // Pop-up Message Box
-            MessageBox(m_hwnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
+            //MessageBox(m_hwnd, L"Insert Minkowski Difference Demo Here", L"Minkowski Difference", MB_OK);
             break;
         case click_two:
             // Set selection for demo
@@ -1659,7 +1488,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Clear area and trigger repaint
             InvalidateRect(m_hwnd, NULL, true);
             // Pop-up Message Box
-            MessageBox(m_hwnd, L"Insert Minkowski Sum Demo Here", L"Minkowski Sum", MB_OK);
+            //MessageBox(m_hwnd, L"Insert Minkowski Sum Demo Here", L"Minkowski Sum", MB_OK);
             break;
         case click_three:
             // Set selection for demo
@@ -1667,7 +1496,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Clear area and trigger repaint
             InvalidateRect(m_hwnd, NULL, true);
             // Pop-up Message Box
-            MessageBox(m_hwnd, L"Insert Quickhull Demo Here", L"Quickhull", MB_OK);
+            //MessageBox(m_hwnd, L"Insert Quickhull Demo Here", L"Quickhull", MB_OK);
             break;
         case click_four:
             // Set selection for demo
@@ -1675,7 +1504,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Clear area and trigger repaint
             InvalidateRect(m_hwnd, NULL, true);
             // Pop-up Message Box
-            MessageBox(m_hwnd, L"Insert Point Convex Hull Demo Here", L"Point Convex Hul", MB_OK);
+            //MessageBox(m_hwnd, L"Insert Point Convex Hull Demo Here", L"Point Convex Hul", MB_OK);
             break;
         case click_five:
             // Set selection for demo
@@ -1683,7 +1512,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Clear area and trigger repaint
             InvalidateRect(m_hwnd, NULL, true);
             // Pop-up Message Box
-            MessageBox(m_hwnd, L"Insert GJK Demo Here", L"GJK", MB_OK);
+            //MessageBox(m_hwnd, L"Insert GJK Demo Here", L"GJK", MB_OK);
             break;
         }
         return 0;
