@@ -293,8 +293,10 @@ class MainWindow : public BaseWindow<MainWindow>
     size_t                  nextColor;
 
     list<shared_ptr<MyEllipse>>             ellipses;
+    list<shared_ptr<MyPolygon>>             polygons;
 
     list<shared_ptr<MyEllipse>>::iterator   selection;
+    list<shared_ptr<MyPolygon>>::iterator   polySelection;
 
     shared_ptr<MyEllipse> Selection()
     {
@@ -308,13 +310,26 @@ class MainWindow : public BaseWindow<MainWindow>
         }
     }
 
+    shared_ptr<MyPolygon> PolySelection()
+    {
+        if (polySelection == polygons.end())
+        {
+            return nullptr;
+        }
+        else
+        {
+            return (*polySelection);
+        }
+    }
+
     void    ClearSelection() { selection = ellipses.end(); }
+    void    ClearPolySelection() { polySelection = polygons.end(); }
     HRESULT InsertEllipse(float x, float y);
     void    DrawPolygon(int size);
     BOOL    HitTest(float x, float y);
     void    SetMode(Mode m);
-    void GenerateRandomPoints(int num);
-    void DrawTestPolyon(int flag);
+    void    GenerateRandomPoints(int num);
+    void    DrawTestPolygon(int flag);
     void    MoveSelection(float x, float y);
     HRESULT CreateGraphicsResources();
     void    DiscardGraphicsResources();
@@ -460,338 +475,334 @@ void MainWindow::OnPaint(HDC hdc)
 
 
         switch (demoSelection) {
-        case 0:
-            // Draw title text
-            /*
-            pRenderTarget->DrawText(
-                demoTitle,
-                ARRAYSIZE(demoTitle) - 1,
-                0,
-                D2D1::RectF(0.0f, 0.0f, 100.0f, 100.0f),
-                pBrush
-                );*/
-                // Start drawing points
-                // generate points for quickhull and convex hull
-                // 
-               // GenerateRandomPoints(10);
-
-            demoSelection = -1;
-            break;
-            /*
-             { int min_x = 0, max_x = 0;
-             for (int i = 1; i < 10; i++)
-             {
-                 if (ellipse[i].x < ellipse[min_x].x)
-                     min_x = i;
-                 if (ellipse[i].x > ellipse[max_x].x)
-                     max_x = i;
-             }
-
-             quickHull(ellipse, 10, ellipse[min_x], ellipse[max_x], 1);
-             quickHull(ellipse, 10, ellipse[min_x], ellipse[max_x], -1);
-             DrawPolygon(10); }
-
-             demoSelection = 1;*/
-
-
-
-            break;
-        case 1:
-            // Insert Minkowski Difference Demo Here
-        {  if (ModeFlag != 1) {
-
-            ModeFlag = 1;
-            GenerateRandomPoints(5);
-        }    AddAxes();
-        //draw the first polygon here
-        testingPolygon1.polygon.clear();
-        int min_x = 0;
-        int max_x = 0;
-        for (int i = 0; i < 5; i++)
-        {
-            if (ellipse1[i].x < ellipse1[min_x].x)
-                min_x = i;
-            if (ellipse1[i].x > ellipse1[max_x].x)
-                max_x = i;
-        }
-
-        quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], 1, testingPolygon1);
-        quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], -1, testingPolygon1);
-        std::vector<D2D1_POINT_2F> tmp1;
-        tmp1.push_back(testingPolygon1.polygon[0]);
-        for (int i = 1; i < testingPolygon1.polygon.size(); i++) {
-
-            bool repeated = false;
-            for (int j = 0; j < tmp1.size(); j++) {
-                if (tmp1[j].x == testingPolygon1.polygon[i].x && tmp1[j].y == testingPolygon1.polygon[i].y) {
-                    repeated = true;
-                }
-
-            }
-            if (!repeated) {
-                tmp1.push_back(testingPolygon1.polygon[i]);
-            }
-        }
-
-
-        ClockwiseSortPoints(tmp1);
-        testingPolygon1.polygon = tmp1;
-        testingPolygon1.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-        testingPolygon1.Draw(pRenderTarget, pBrush);
-
-
-        //draw the second polygon
-        testingPolygon2.polygon.clear();
-        min_x = 0;
-        max_x = 0;
-        for (int i = 0; i < 5; i++)
-        {
-            if (ellipse2[i].x < ellipse2[min_x].x)
-                min_x = i;
-            if (ellipse2[i].x > ellipse2[max_x].x)
-                max_x = i;
-        }
-
-        quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], 1, testingPolygon2);
-        quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], -1, testingPolygon2);
-        std::vector<D2D1_POINT_2F> tmp2;
-        tmp2.push_back(testingPolygon2.polygon[0]);
-        for (int i = 1; i < testingPolygon2.polygon.size(); i++) {
-
-            bool repeated = false;
-            for (int j = 0; j < tmp2.size(); j++) {
-                if (tmp2[j].x == testingPolygon2.polygon[i].x && tmp2[j].y == testingPolygon2.polygon[i].y) {
-                    repeated = true;
-                }
-
-            }
-            if (!repeated) {
-                tmp2.push_back(testingPolygon2.polygon[i]);
-            }
-        }
-
-
-        ClockwiseSortPoints(tmp2);
-        testingPolygon2.polygon = tmp2;
-        testingPolygon2.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-        testingPolygon2.Draw(pRenderTarget, pBrush);
-        // do sum here
-        testingPolygon.polygon.clear();
-        min_x = 0;
-        max_x = 0;
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
-                ellipseMsk[i * 5 + j] = { ellipse1[i].x - ellipse2[j].x + 750, ellipse1[i].y - ellipse2[j].y + 360 };
-            }
-        }
-        //   MinkowskiSum(testingPolygon1.polygon, testingPolygon2.polygon);
-        for (int i = 0; i < 25; i++)
-        {
-            if (ellipseMsk[i].x < ellipseMsk[min_x].x)
-                min_x = i;
-            if (ellipseMsk[i].x > ellipseMsk[max_x].x)
-                max_x = i;
-        }
-
-        quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], 1, testingPolygon);
-        quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], -1, testingPolygon);
-        std::vector<D2D1_POINT_2F> tmp;
-        tmp.push_back(testingPolygon.polygon[0]);
-        for (int i = 1; i < testingPolygon.polygon.size(); i++) {
-
-            bool repeated = false;
-            for (int j = 0; j < tmp.size(); j++) {
-                if (tmp[j].x == testingPolygon.polygon[i].x && tmp[j].y == testingPolygon.polygon[i].y) {
-                    repeated = true;
-                }
-
-            }
-            if (!repeated) {
-                tmp.push_back(testingPolygon.polygon[i]);
-            }
-        }
-
-
-        ClockwiseSortPoints(tmp);
-        testingPolygon.polygon = tmp;
-        testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-        testingPolygon.Draw(pRenderTarget, pBrush);
-
-
-        }
-        break;
-        case 2:
-            // Insert Minkowski Sum Demo Here
-        {  if (ModeFlag != 2) {
-
-            ModeFlag = 2;
-            GenerateRandomPoints(5);
-        }    AddAxes();
-        //draw the first polygon here
-        testingPolygon1.polygon.clear();
-        int min_x = 0;
-        int max_x = 0;
-        for (int i = 0; i < 5; i++)
-        {
-            if (ellipse1[i].x < ellipse1[min_x].x)
-                min_x = i;
-            if (ellipse1[i].x > ellipse1[max_x].x)
-                max_x = i;
-        }
-
-        quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], 1, testingPolygon1);
-        quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], -1, testingPolygon1);
-        std::vector<D2D1_POINT_2F> tmp1;
-        tmp1.push_back(testingPolygon1.polygon[0]);
-        for (int i = 1; i < testingPolygon1.polygon.size(); i++) {
-
-            bool repeated = false;
-            for (int j = 0; j < tmp1.size(); j++) {
-                if (tmp1[j].x == testingPolygon1.polygon[i].x && tmp1[j].y == testingPolygon1.polygon[i].y) {
-                    repeated = true;
-                }
-
-            }
-            if (!repeated) {
-                tmp1.push_back(testingPolygon1.polygon[i]);
-            }
-        }
-
-
-        ClockwiseSortPoints(tmp1);
-        testingPolygon1.polygon = tmp1;
-        testingPolygon1.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-        testingPolygon1.Draw(pRenderTarget, pBrush);
-
-
-        //draw the second polygon
-        testingPolygon2.polygon.clear();
-        min_x = 0;
-        max_x = 0;
-        for (int i = 0; i < 5; i++)
-        {
-            if (ellipse2[i].x < ellipse2[min_x].x)
-                min_x = i;
-            if (ellipse2[i].x > ellipse2[max_x].x)
-                max_x = i;
-        }
-
-        quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], 1, testingPolygon2);
-        quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], -1, testingPolygon2);
-        std::vector<D2D1_POINT_2F> tmp2;
-        tmp2.push_back(testingPolygon2.polygon[0]);
-        for (int i = 1; i < testingPolygon2.polygon.size(); i++) {
-
-            bool repeated = false;
-            for (int j = 0; j < tmp2.size(); j++) {
-                if (tmp2[j].x == testingPolygon2.polygon[i].x && tmp2[j].y == testingPolygon2.polygon[i].y) {
-                    repeated = true;
-                }
-
-            }
-            if (!repeated) {
-                tmp2.push_back(testingPolygon2.polygon[i]);
-            }
-        }
-
-
-        ClockwiseSortPoints(tmp2);
-        testingPolygon2.polygon = tmp2;
-        testingPolygon2.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-        testingPolygon2.Draw(pRenderTarget, pBrush);
-        // do sum here
-        testingPolygon.polygon.clear();
-        min_x = 0;
-        max_x = 0;
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
-                ellipseMsk[i * 5 + j] = { ellipse1[i].x + ellipse2[j].x - 750, ellipse1[i].y + ellipse2[j].y - 360 };
-            }
-        }
-        //   MinkowskiSum(testingPolygon1.polygon, testingPolygon2.polygon);
-        for (int i = 0; i < 25; i++)
-        {
-            if (ellipseMsk[i].x < ellipseMsk[min_x].x)
-                min_x = i;
-            if (ellipseMsk[i].x > ellipseMsk[max_x].x)
-                max_x = i;
-        }
-
-        quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], 1, testingPolygon);
-        quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], -1, testingPolygon);
-        std::vector<D2D1_POINT_2F> tmp;
-        tmp.push_back(testingPolygon.polygon[0]);
-        for (int i = 1; i < testingPolygon.polygon.size(); i++) {
-
-            bool repeated = false;
-            for (int j = 0; j < tmp.size(); j++) {
-                if (tmp[j].x == testingPolygon.polygon[i].x && tmp[j].y == testingPolygon.polygon[i].y) {
-                    repeated = true;
-                }
-
-            }
-            if (!repeated) {
-                tmp.push_back(testingPolygon.polygon[i]);
-            }
-        }
-
-
-        ClockwiseSortPoints(tmp);
-        testingPolygon.polygon = tmp;
-        testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-        testingPolygon.Draw(pRenderTarget, pBrush);
-
-
-        }
-        case 3:
-        {
-            testingPolygon.polygon.clear();
-            int min_x = 0;
-            int max_x = 0;
-            for (int i = 0; i < 10; i++)
+            case 0:
             {
-                if (ellipse[i].x < ellipse[min_x].x)
-                    min_x = i;
-                if (ellipse[i].x > ellipse[max_x].x)
-                    max_x = i;
+                demoSelection = -1;
+                break;
             }
+            case 1:
+            {
+                // Insert Minkowski Difference Demo Here
+                if (ModeFlag != 1) {
+                    ModeFlag = 1;
+                    ellipses.clear();
+                    GenerateRandomPoints(5);
+                }
+                AddAxes();
+                //draw the first polygon here
+                testingPolygon1.polygon.clear();
+                int min_x = 0;
+                int max_x = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    if (ellipse1[i].x < ellipse1[min_x].x)
+                        min_x = i;
+                    if (ellipse1[i].x > ellipse1[max_x].x)
+                        max_x = i;
+                }
 
-            quickHull(ellipse, 10, ellipse[min_x], ellipse[max_x], 1, testingPolygon);
-            quickHull(ellipse, 10, ellipse[min_x], ellipse[max_x], -1, testingPolygon);
-            std::vector<D2D1_POINT_2F> tmp;
-            tmp.push_back(testingPolygon.polygon[0]);
-            for (int i = 1; i < testingPolygon.polygon.size(); i++) {
+                quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], 1, testingPolygon1);
+                quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], -1, testingPolygon1);
+                std::vector<D2D1_POINT_2F> tmp1;
+                tmp1.push_back(testingPolygon1.polygon[0]);
+                for (int i = 1; i < testingPolygon1.polygon.size(); i++) {
 
-                bool repeated = false;
-                for (int j = 0; j < tmp.size(); j++) {
-                    if (tmp[j].x == testingPolygon.polygon[i].x && tmp[j].y == testingPolygon.polygon[i].y) {
-                        repeated = true;
+                    bool repeated = false;
+                    for (int j = 0; j < tmp1.size(); j++) {
+                        if (tmp1[j].x == testingPolygon1.polygon[i].x && tmp1[j].y == testingPolygon1.polygon[i].y) {
+                            repeated = true;
+                        }
+
                     }
+                    if (!repeated) {
+                        tmp1.push_back(testingPolygon1.polygon[i]);
+                    }
+                }
 
+                ClockwiseSortPoints(tmp1);
+                testingPolygon1.polygon = tmp1;
+                testingPolygon1.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
+                testingPolygon1.Draw(pRenderTarget, pBrush);
+
+                //draw the second polygon
+                testingPolygon2.polygon.clear();
+                min_x = 0;
+                max_x = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    if (ellipse2[i].x < ellipse2[min_x].x)
+                        min_x = i;
+                    if (ellipse2[i].x > ellipse2[max_x].x)
+                        max_x = i;
                 }
-                if (!repeated) {
-                    tmp.push_back(testingPolygon.polygon[i]);
+
+                quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], 1, testingPolygon2);
+                quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], -1, testingPolygon2);
+                std::vector<D2D1_POINT_2F> tmp2;
+                tmp2.push_back(testingPolygon2.polygon[0]);
+                for (int i = 1; i < testingPolygon2.polygon.size(); i++) {
+
+                    bool repeated = false;
+                    for (int j = 0; j < tmp2.size(); j++) {
+                        if (tmp2[j].x == testingPolygon2.polygon[i].x && tmp2[j].y == testingPolygon2.polygon[i].y) {
+                            repeated = true;
+                        }
+
+                    }
+                    if (!repeated) {
+                        tmp2.push_back(testingPolygon2.polygon[i]);
+                    }
                 }
+
+                ClockwiseSortPoints(tmp2);
+                testingPolygon2.polygon = tmp2;
+                testingPolygon2.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
+                testingPolygon2.Draw(pRenderTarget, pBrush);
+
+                // do difference here
+                testingPolygon.polygon.clear();
+                min_x = 0;
+                max_x = 0;
+                for (int i = 0; i < 5; i++) {
+                    for (int j = 0; j < 5; j++) {
+                        ellipseMsk[i * 5 + j] = { ellipse1[i].x - ellipse2[j].x + 750, ellipse1[i].y - ellipse2[j].y + 360 };
+                    }
+                }
+                for (int i = 0; i < 25; i++)
+                {
+                    if (ellipseMsk[i].x < ellipseMsk[min_x].x)
+                        min_x = i;
+                    if (ellipseMsk[i].x > ellipseMsk[max_x].x)
+                        max_x = i;
+                }
+
+                quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], 1, testingPolygon);
+                quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], -1, testingPolygon);
+                std::vector<D2D1_POINT_2F> tmp;
+                tmp.push_back(testingPolygon.polygon[0]);
+                for (int i = 1; i < testingPolygon.polygon.size(); i++) {
+
+                    bool repeated = false;
+                    for (int j = 0; j < tmp.size(); j++) {
+                        if (tmp[j].x == testingPolygon.polygon[i].x && tmp[j].y == testingPolygon.polygon[i].y) {
+                            repeated = true;
+                        }
+
+                    }
+                    if (!repeated) {
+                        tmp.push_back(testingPolygon.polygon[i]);
+                    }
+                }
+
+                ClockwiseSortPoints(tmp);
+                testingPolygon.polygon = tmp;
+                testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
+                testingPolygon.Draw(pRenderTarget, pBrush);
+
+                break;
             }
-            ClockwiseSortPoints(tmp);
-            testingPolygon.polygon = tmp;
-            testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
-            testingPolygon.Draw(pRenderTarget, pBrush);
+            case 2:
+            {
+                // Insert Minkowski Sum Demo Here
+                if (ModeFlag != 2) {
+
+                    ModeFlag = 2;
+                    ellipses.clear();
+                    GenerateRandomPoints(5);
+                }
+                AddAxes();
+                //draw the first polygon here
+                testingPolygon1.polygon.clear();
+                int min_x = 0;
+                int max_x = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    if (ellipse1[i].x < ellipse1[min_x].x)
+                        min_x = i;
+                    if (ellipse1[i].x > ellipse1[max_x].x)
+                        max_x = i;
+                }
+
+                quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], 1, testingPolygon1);
+                quickHull(ellipse1, 5, ellipse1[min_x], ellipse1[max_x], -1, testingPolygon1);
+                std::vector<D2D1_POINT_2F> tmp1;
+                tmp1.push_back(testingPolygon1.polygon[0]);
+                for (int i = 1; i < testingPolygon1.polygon.size(); i++) {
+
+                    bool repeated = false;
+                    for (int j = 0; j < tmp1.size(); j++) {
+                        if (tmp1[j].x == testingPolygon1.polygon[i].x && tmp1[j].y == testingPolygon1.polygon[i].y) {
+                            repeated = true;
+                        }
+
+                    }
+                    if (!repeated) {
+                        tmp1.push_back(testingPolygon1.polygon[i]);
+                    }
+                }
+
+
+                ClockwiseSortPoints(tmp1);
+                testingPolygon1.polygon = tmp1;
+                testingPolygon1.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
+                testingPolygon1.Draw(pRenderTarget, pBrush);
+
+
+                //draw the second polygon
+                testingPolygon2.polygon.clear();
+                min_x = 0;
+                max_x = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    if (ellipse2[i].x < ellipse2[min_x].x)
+                        min_x = i;
+                    if (ellipse2[i].x > ellipse2[max_x].x)
+                        max_x = i;
+                }
+
+                quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], 1, testingPolygon2);
+                quickHull(ellipse2, 5, ellipse2[min_x], ellipse2[max_x], -1, testingPolygon2);
+                std::vector<D2D1_POINT_2F> tmp2;
+                tmp2.push_back(testingPolygon2.polygon[0]);
+                for (int i = 1; i < testingPolygon2.polygon.size(); i++) {
+
+                    bool repeated = false;
+                    for (int j = 0; j < tmp2.size(); j++) {
+                        if (tmp2[j].x == testingPolygon2.polygon[i].x && tmp2[j].y == testingPolygon2.polygon[i].y) {
+                            repeated = true;
+                        }
+
+                    }
+                    if (!repeated) {
+                        tmp2.push_back(testingPolygon2.polygon[i]);
+                    }
+                }
+
+
+                ClockwiseSortPoints(tmp2);
+                testingPolygon2.polygon = tmp2;
+                testingPolygon2.SetColor(D2D1::ColorF(D2D1::ColorF::HotPink));
+                testingPolygon2.Draw(pRenderTarget, pBrush);
+                // do sum here
+                testingPolygon.polygon.clear();
+                min_x = 0;
+                max_x = 0;
+                for (int i = 0; i < 5; i++) {
+                    for (int j = 0; j < 5; j++) {
+                        ellipseMsk[i * 5 + j] = { ellipse1[i].x + ellipse2[j].x - 750, ellipse1[i].y + ellipse2[j].y - 360 };
+                    }
+                }
+                //   MinkowskiSum(testingPolygon1.polygon, testingPolygon2.polygon);
+                for (int i = 0; i < 25; i++)
+                {
+                    if (ellipseMsk[i].x < ellipseMsk[min_x].x)
+                        min_x = i;
+                    if (ellipseMsk[i].x > ellipseMsk[max_x].x)
+                        max_x = i;
+                }
+
+                quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], 1, testingPolygon);
+                quickHull(ellipseMsk, 25, ellipseMsk[min_x], ellipseMsk[max_x], -1, testingPolygon);
+                std::vector<D2D1_POINT_2F> tmp;
+                tmp.push_back(testingPolygon.polygon[0]);
+                for (int i = 1; i < testingPolygon.polygon.size(); i++) {
+
+                    bool repeated = false;
+                    for (int j = 0; j < tmp.size(); j++) {
+                        if (tmp[j].x == testingPolygon.polygon[i].x && tmp[j].y == testingPolygon.polygon[i].y) {
+                            repeated = true;
+                        }
+
+                    }
+                    if (!repeated) {
+                        tmp.push_back(testingPolygon.polygon[i]);
+                    }
+                }
+
+
+                ClockwiseSortPoints(tmp);
+                testingPolygon.polygon = tmp;
+                testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
+                testingPolygon.Draw(pRenderTarget, pBrush);
+
+                break;
+            }
+            case 3:
+            {
+                // Insert QuickHull Demo Here
+                testingPolygon.polygon.clear();
+                if (ModeFlag != 3) {
+                    ModeFlag = 3;
+                    ellipses.clear();
+                    GenerateRandomPoints(10);
+                }
+                int min_x = 0;
+                int max_x = 0;
+                for (int i = 0; i < 10; i++)
+                {
+                    if (ellipse[i].x < ellipse[min_x].x)
+                        min_x = i;
+                    if (ellipse[i].x > ellipse[max_x].x)
+                        max_x = i;
+                }
+
+                quickHull(ellipse, 10, ellipse[min_x], ellipse[max_x], 1, testingPolygon);
+                quickHull(ellipse, 10, ellipse[min_x], ellipse[max_x], -1, testingPolygon);
+                std::vector<D2D1_POINT_2F> tmp;
+                tmp.push_back(testingPolygon.polygon[0]);
+                for (int i = 1; i < testingPolygon.polygon.size(); i++) {
+
+                    bool repeated = false;
+                    for (int j = 0; j < tmp.size(); j++) {
+                        if (tmp[j].x == testingPolygon.polygon[i].x && tmp[j].y == testingPolygon.polygon[i].y) {
+                            repeated = true;
+                        }
+
+                    }
+                    if (!repeated) {
+                        tmp.push_back(testingPolygon.polygon[i]);
+                    }
+                }
+                ClockwiseSortPoints(tmp);
+                testingPolygon.polygon = tmp;
+                testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
+                testingPolygon.Draw(pRenderTarget, pBrush);
+
+                break;
+            }
+            case 4:
+            {
+                // Insert Point Convex Hull Demo Here
+                testingPolygon.polygon.clear();
+                DrawTestPolygon(1);
+                if (ModeFlag != 4) {
+                    ellipses.clear();
+                    ModeFlag = 4;
+                    GenerateRandomPoints(1);
+
+                    /*
+                    // Draw random polygon
+                        std::vector<D2D1_POINT_2F> points;
+                        D2D1_POINT_2F temp;
+                        for (int i = 0; i < 8; i++) {
+                            temp = D2D1::Point2F(rand() % 900 + 300, rand() % 550 + 50);
+                            points.push_back(temp);
+                        }
+                        ClockwiseSortPoints(points);
+                        testingPolygon.polygon = points;
+                        testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));
+                        testingPolygon.Draw(pRenderTarget, pBrush);
+                    */
+                }
+                break;
+            }
+            case 5:
+            {
+                // Insert GJK Demo Here
+                break;
+            }
         }
 
-        // Insert QuickHull Demo Here
-        break;
-        case 4:
-            DrawTestPolyon(1);
-            // Insert Point Convex Hull Demo Here
-            break;
-        case 5:
-            // Insert GJK Demo Here
-            break;
-        }
-
-        // Start a new ellipse.
-        // InsertEllipse(1.0, 1.0f);
 
         for (auto i = ellipses.begin(); i != ellipses.end(); ++i)
         {
@@ -809,7 +820,6 @@ void MainWindow::OnPaint(HDC hdc)
         {
             DiscardGraphicsResources();
         }
-        //EndPaint(m_hwnd, &ps);
     }
 }
 
@@ -864,22 +874,6 @@ void MainWindow::OnLButtonDown(int pixelX, int pixelY, DWORD flags)
     InvalidateRect(m_hwnd, NULL, FALSE);
 }
 
-//
-//bool MainWindow::InsidePolygon(Vector2D polygon[], Vector2D point, int PolySize) {
-//
-//    //  return (point.x > 500) ? true : false;
-//    int count = 0;
-//    for (int i = 0; i < PolySize - 1; i++) {
-//        if (IsIntersect(polygon[i], polygon[i + 1], point, { point.x,-2000.0f })) {
-//            count += 1;
-//        }
-//    }
-//    if (IsIntersect(polygon[5], polygon[0], point, { point.x,-2000.0f })) {
-//        count += 1;
-//    }
-//    return  (count % 2 == 1) ? true : false;
-//
-//}
 
 int MainWindow::FindSide(Vector2D p1, Vector2D p2, Vector2D p)
 {
@@ -998,10 +992,11 @@ void MainWindow::OnLButtonUp()
     }
     ReleaseCapture();
 }
+/*
 void MainWindow::MinkowskiSum(std::vector<D2D1_POINT_2F>& polygon1, std::vector<D2D1_POINT_2F>& polygon2) {
 
 
-}
+}*/
 
 void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
 {
@@ -1148,37 +1143,6 @@ HRESULT MainWindow::InsertEllipse(float x, float y)
     return S_OK;
 }
 
-//void MainWindow::DrawPolygon(int size){
-//
-//        pBrush->SetColor(D2D1::ColorF(D2D1::ColorF::Black));
-//        Vector2D arr[10];
-//        for (int i = 0; i < 6; i++) {
-//            Vector2D a = *Vec.begin();
-//            arr[i].x = a.x;
-//            arr[i].y = a.y;
-//            Vec.erase(Vec.begin());
-//        }
-//
-//        for (int i = 0; i < 5; i++) {
-//            pRenderTarget->DrawLine(
-//                D2D1::Point2F(arr[i].x, arr[i].y),
-//                D2D1::Point2F(arr[i + 1].x, arr[i + 1].y),
-//                pBrush,
-//                0.5f
-//            );
-//        }
-//
-//
-//   
-//    //pRenderTarget->DrawLine(
-//    //    D2D1::Point2F(Vec[size-1].x, Vec[size - 1].y),
-//    //    D2D1::Point2F(Vec[0].x, Vec[0].y),
-//    //    pBrush,
-//    //    0.5f
-//    //);
-//   
-//}
-
 BOOL MainWindow::HitTest(float x, float y)
 {
     for (auto i = ellipses.rbegin(); i != ellipses.rend(); ++i)
@@ -1227,40 +1191,54 @@ void MainWindow::SetMode(Mode m)
 }
 void MainWindow::GenerateRandomPoints(int num) {
     // Start drawing points
-    if (ModeFlag == 2 || ModeFlag == 1) {
+    if (ModeFlag == 1) {
         for (int i = 0; i < num; i++) {
-            float x = rand() % 500 + 220;
-            float y = rand() % 350 + 30;
+            float x = rand() % 200 + 500;
+            float y = rand() % 250 + 50;
             InsertEllipse(x, y);
             ellipse1[i] = { x,y };
         }
         for (int i = 0; i < num; i++) {
-            float x = rand() % 500 + 220;
-            float y = rand() % 350 + 30;
+            float x = rand() % 200 + 800;
+            float y = rand() % 250 + 50;
+            InsertEllipse(x, y);
+            ellipse2[i] = { x,y };
+        }
+    }
+    else if(ModeFlag == 2){
+        for (int i = 0; i < num; i++) {
+            float x = rand() % 200 + 500;
+            float y = rand() % 250 + 50;
+            InsertEllipse(x, y);
+            ellipse1[i] = { x,y };
+        }
+        for (int i = 0; i < num; i++) {
+            float x = rand() % 200 + 800;
+            float y = rand() % 250 + 400;
             InsertEllipse(x, y);
             ellipse2[i] = { x,y };
         }
     }
     else {
         for (int i = 0; i < num; i++) {
-            float x = rand() % 500 + 220;
-            float y = rand() % 350 + 30;
+            float x = rand() % 900 + 300;
+            float y = rand() % 550 + 50;
             InsertEllipse(x, y);
             ellipse[i] = { x,y };
         }
     }
 
 }
-void MainWindow::DrawTestPolyon(int flag) {
+void MainWindow::DrawTestPolygon(int flag) {
     if (flag == 1) {
         // Draw Polygon!
         std::vector<D2D1_POINT_2F> points;
-        D2D1_POINT_2F point1 = D2D1::Point2F(300.0f, 40.0f);
-        D2D1_POINT_2F point2 = D2D1::Point2F(400.0f, 120.0f);
-        D2D1_POINT_2F point3 = D2D1::Point2F(600.0f, 240.0f);
-        D2D1_POINT_2F point4 = D2D1::Point2F(330.0f, 340.0f);
-        D2D1_POINT_2F point5 = D2D1::Point2F(300.0f, 440.0f);
-        D2D1_POINT_2F point6 = D2D1::Point2F(250.0f, 240.0f);
+        D2D1_POINT_2F point1 = D2D1::Point2F(500.0f, 140.0f);
+        D2D1_POINT_2F point2 = D2D1::Point2F(700.0f, 220.0f);
+        D2D1_POINT_2F point3 = D2D1::Point2F(800.0f, 340.0f);
+        D2D1_POINT_2F point4 = D2D1::Point2F(530.0f, 440.0f);
+        D2D1_POINT_2F point5 = D2D1::Point2F(500.0f, 540.0f);
+        D2D1_POINT_2F point6 = D2D1::Point2F(450.0f, 340.0f);
         points.push_back(point1);
         points.push_back(point2);
         points.push_back(point3);
@@ -1450,28 +1428,6 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
-            /*
-            * These cases don't seem to do anything
-            * Replaced by checking VK_F1, VK_F2, and VK_F3 in OnKeyDown()
-            case ID_DRAW_MODE:
-                SetMode(DrawMode);
-                break;
-
-            case ID_SELECT_MODE:
-                SetMode(SelectMode);
-                break;
-
-            case ID_TOGGLE_MODE:
-                if (mode == DrawMode)
-                {
-                    SetMode(SelectMode);
-                }
-                else
-                {
-                    SetMode(DrawMode);
-                }
-                break;
-            */
         case click_one:
             // Set selection for demo
             demoSelection = 1;
