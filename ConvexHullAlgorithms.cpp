@@ -5,6 +5,7 @@
 #include <tchar.h>
 #include <d2d1.h>
 #include <set>
+#include <iostream>
 #pragma comment(lib, "d2d1")
 
 #include "basewin.h"
@@ -99,11 +100,79 @@ struct MyPolygon
             double s = ((py1 - py3) * (px2 - px1) - (px1 - px3) * (py2 - py1)) / d;
             if ((r >= 0) && (r <= 1) && (s >= 0) && (s <= 1))
             {
-                flag = true;
+                flag = !flag;
             }
         }
         return flag;
 
+    }
+
+    // returns if p lies on line segment p1->p2
+    BOOL onSegment(D2D1_POINT_2F p1, D2D1_POINT_2F p2, D2D1_POINT_2F p3) {
+        if (p2.x <= max(p1.x, p3.x) && p2.x >= min(p1.x, p3.x) && p2.y <= max(p1.y, p3.y) && p2.y >= min(p1.y, p3.y))
+            return true;
+        return false;
+    }
+
+    // returns orientation of three points
+    int orientation(D2D1_POINT_2F p1, D2D1_POINT_2F p2, D2D1_POINT_2F p3) {
+        float val = (p2.y - p1.y) * (p3.x - p2.x) - (p2.x - p1.x) * (p3.y - p2.y);
+        if (val == 0)
+            return 0;           // colinear
+        else if (val > 0)
+            return 1;           // clockwise
+        else
+            return 2;           // counter clockwise
+    }
+    
+    // returns if line segment start1->end1 intersects line segment start2->end2
+    BOOL intersecting(D2D1_POINT_2F start1, D2D1_POINT_2F end1, D2D1_POINT_2F start2, D2D1_POINT_2F end2) {
+        // generate the four orientations
+        int orientation1 = orientation(start1, end1, start2);
+        int orientation2 = orientation(start1, end1, end2);
+        int orientation3 = orientation(start2, end2, start1);
+        int orientation4 = orientation(start2, end2, end1);
+
+        // if the general case, or any special cases are met, line segments are intersecting
+
+        // general case (when orientation1/orientation2 are different and orientation3/orientation4 are different
+        if (orientation1 != orientation2 && orientation3 != orientation4)
+            return true;
+
+        // special case (when orientation1 is colinear and start2 lies on line segment start1->end1
+        if (orientation1 == 0 && onSegment(start1, start2, end1))
+            return true;
+
+        // special case (when orientation2 is colinear and end2 lies on line segment start1->end1
+        if (orientation2 == 0 && onSegment(start1, end2, end1))
+            return true;
+
+        // special case (when orientation3 is colinear and start1 lies on line segment start2->end2
+        if (orientation3 == 0 && onSegment(start2, start1, end2))
+            return true;
+
+        // special case (when orientation4 is colinear and end1 lies on line segment start2->end2
+        if (orientation4 == 0 && onSegment(start2, end1, end2))
+            return true;
+
+        return false;
+    }
+
+    // returns if this polygon contains the given point
+    BOOL contains(D2D1_POINT_2F p) {
+        D2D1_POINT_2F tmp = D2D1::Point2F(5000.0f, p.y);
+        int intersections = 0;
+        int i = 0;
+        do {
+            int next = (i + 1) % polygon.size();
+            if (intersecting(polygon[i], polygon[next], p, tmp)) {
+                if (orientation(polygon[i], p, polygon[next]) == 0)
+                    return onSegment(polygon[i], p, polygon[next]);
+                intersections++;
+            }
+            i = next;
+        } while (i != 0);
+        return (intersections % 2 == 1);
     }
 };
 MyPolygon testingPolygon;
@@ -326,7 +395,6 @@ class MainWindow : public BaseWindow<MainWindow>
     void    ClearSelection() { selection = ellipses.end(); }
     void    ClearPolySelection() { polySelection = polygons.end(); }
     HRESULT InsertEllipse(float x, float y);
-    void    DrawPolygon(int size);
     BOOL    HitTest(float x, float y);
     void    SetMode(Mode m);
     void    GenerateRandomPoints(int num);
@@ -337,17 +405,14 @@ class MainWindow : public BaseWindow<MainWindow>
     void    OnPaint(HDC hdc);
     void    Resize();
     void    OnLButtonDown(int pixelX, int pixelY, DWORD flags);
-    //   bool    InsidePolygon(Vector2D polygon[], Vector2D point, int PolySize);
-    //   bool    IsIntersect(Vector2D pstart1, Vector2D pend1, Vector2D pstart2, Vector2D pend2);
     void    OnLButtonUp();
-    void MinkowskiSum(std::vector<D2D1_POINT_2F>& polygon1, std::vector<D2D1_POINT_2F>& polygon2);
     void    OnMouseMove(int pixelX, int pixelY, DWORD flags);
     void    OnKeyDown(UINT vkey);
-    int FindSide(Vector2D p1, Vector2D p2, Vector2D p);
-    float  dist(Vector2D p, Vector2D q);
-    float lineDist(Vector2D p1, Vector2D p2, Vector2D p);
-    bool PointCmp(const D2D1_POINT_2F& a, const D2D1_POINT_2F& b, const D2D1_POINT_2F& center);
-    void ClockwiseSortPoints(std::vector<D2D1_POINT_2F>& vPoints);
+    int     FindSide(Vector2D p1, Vector2D p2, Vector2D p);
+    float   dist(Vector2D p, Vector2D q);
+    float   lineDist(Vector2D p1, Vector2D p2, Vector2D p);
+    bool    PointCmp(const D2D1_POINT_2F& a, const D2D1_POINT_2F& b, const D2D1_POINT_2F& center);
+    void    ClockwiseSortPoints(std::vector<D2D1_POINT_2F>& vPoints);
     void    quickHull(Vector2D a[], int n, Vector2D p1, Vector2D p2, int side, MyPolygon& testingPolygon);
     void    AddAxes();
 
@@ -389,7 +454,7 @@ HRESULT MainWindow::CreateGraphicsResources()
 void MainWindow::AddAxes() {
     // Draw grid lines
     pBrush->SetColor(D2D1::ColorF(D2D1::ColorF::Gray));
-    for (int i = 200; i < 1300; i += 10) {
+    for (float i = 200; i < 1300; i += 10) {
         pRenderTarget->DrawLine(
             D2D1::Point2F(i, 10.0f),
             D2D1::Point2F(i, 700.0f),
@@ -397,7 +462,7 @@ void MainWindow::AddAxes() {
             0.5f
         );;
     }
-    for (int i = 10; i < 710; i += 10) {
+    for (float i = 10; i < 710; i += 10) {
         pRenderTarget->DrawLine(
             D2D1::Point2F(200.0f, i),
             D2D1::Point2F(1300.0f, i),
@@ -431,11 +496,8 @@ void MainWindow::OnPaint(HDC hdc)
     HRESULT hr = CreateGraphicsResources();
     if (SUCCEEDED(hr))
     {
-        PAINTSTRUCT ps;
         D2D1_SIZE_F rtSize = pRenderTarget->GetSize();
         static const WCHAR demoTitle[] = L"Convex Hull Algorithms by Rocco Persico and Wan Shiqi";
-
-        //BeginPaint(m_hwnd, &ps);
 
         pRenderTarget->BeginDraw();
 
@@ -914,7 +976,10 @@ void MainWindow::OnPaint(HDC hdc)
                 ClockwiseSortPoints(tmp);
                 testingPolygon.polygon = tmp;
                 //InsertEllipse(750.0f, 350.0f);
-                if (testingPolygon.InsidePolygon(D2D1::Point2F(750.0f, 350.0f))) {
+                bool colliding = false;
+                colliding = testingPolygon.contains(D2D1::Point2F(750.0f, 350.0f));
+                cout << colliding;
+                if (colliding) {
                     testingPolygon.SetColor(D2D1::ColorF(D2D1::ColorF::Yellow));
                 }
                 else {
@@ -1000,7 +1065,7 @@ void MainWindow::OnLButtonDown(int pixelX, int pixelY, DWORD flags)
 
 int MainWindow::FindSide(Vector2D p1, Vector2D p2, Vector2D p)
 {
-    int val = (p.y - p1.y) * (p2.x - p1.x) -
+    float val = (p.y - p1.y) * (p2.x - p1.x) -
         (p2.y - p1.y) * (p.x - p1.x);
 
     if (val > 0)
@@ -1025,13 +1090,13 @@ bool  MainWindow::PointCmp(const D2D1_POINT_2F& a, const D2D1_POINT_2F& b, const
         return true;
     if (a.x == 0 && b.x == 0)
         return a.y > b.y;
-    int det = (a.x - center.x) * (b.y - center.y) - (b.x - center.x) * (a.y - center.y);
+    float det = (a.x - center.x) * (b.y - center.y) - (b.x - center.x) * (a.y - center.y);
     if (det < 0)
         return true;
     if (det > 0)
         return false;
-    int d1 = (a.x - center.x) * (a.x - center.x) + (a.y - center.y) * (a.y - center.y);
-    int d2 = (b.x - center.x) * (b.x - center.y) + (b.y - center.y) * (b.y - center.y);
+    float d1 = (a.x - center.x) * (a.x - center.x) + (a.y - center.y) * (a.y - center.y);
+    float d2 = (b.x - center.x) * (b.x - center.y) + (b.y - center.y) * (b.y - center.y);
     return d1 > d2;
 }
 void  MainWindow::ClockwiseSortPoints(std::vector<D2D1_POINT_2F>& vPoints)
@@ -1062,11 +1127,11 @@ void  MainWindow::ClockwiseSortPoints(std::vector<D2D1_POINT_2F>& vPoints)
 void MainWindow::quickHull(Vector2D a[], int n, Vector2D p1, Vector2D p2, int side, MyPolygon& mypolygon)
 {
     int ind = -1;
-    int max_dist = 0;
+    float max_dist = 0;
 
     for (int i = 0; i < n; i++)
     {
-        int temp = lineDist(p1, p2, a[i]);
+        float temp = lineDist(p1, p2, a[i]);
         if (FindSide(p1, p2, a[i]) == side && temp > max_dist)
         {
             ind = i;
@@ -1115,11 +1180,6 @@ void MainWindow::OnLButtonUp()
     }
     ReleaseCapture();
 }
-/*
-void MainWindow::MinkowskiSum(std::vector<D2D1_POINT_2F>& polygon1, std::vector<D2D1_POINT_2F>& polygon2) {
-
-
-}*/
 
 void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
 {
@@ -1194,7 +1254,7 @@ void MainWindow::OnMouseMove(int pixelX, int pixelY, DWORD flags)
 
 
                 if (demoSelection == 4) {
-                    if (testingPolygon.InsidePolygon(point)) {
+                    if (testingPolygon.contains(point)) {
                         Selection()->color.r = 100.0f;
                         Selection()->color.g = 0.0;
                         Selection()->color.b = 0.0;
@@ -1350,36 +1410,36 @@ void MainWindow::GenerateRandomPoints(int num) {
     // Start drawing points
     if (ModeFlag == 1 || ModeFlag == 5) {
         for (int i = 0; i < num; i++) {
-            float x = rand() % 200 + 500;
-            float y = rand() % 250 + 50;
+            float x = FLOAT(rand() % 200 + 500);
+            float y = FLOAT(rand() % 250 + 50);
             InsertEllipse(x, y);
             ellipse1[i] = { x,y };
         }
         for (int i = 0; i < num; i++) {
-            float x = rand() % 200 + 800;
-            float y = rand() % 250 + 50;
+            float x = FLOAT(rand() % 200 + 800);
+            float y = FLOAT(rand() % 250 + 50);
             InsertEllipse(x, y);
             ellipse2[i] = { x,y };
         }
     }
     else if(ModeFlag == 2){
         for (int i = 0; i < num; i++) {
-            float x = rand() % 200 + 500;
-            float y = rand() % 250 + 50;
+            float x = FLOAT(rand() % 200 + 500);
+            float y = FLOAT(rand() % 250 + 50);
             InsertEllipse(x, y);
             ellipse1[i] = { x,y };
         }
         for (int i = 0; i < num; i++) {
-            float x = rand() % 200 + 800;
-            float y = rand() % 250 + 400;
+            float x = FLOAT(rand() % 200 + 800);
+            float y = FLOAT(rand() % 250 + 400);
             InsertEllipse(x, y);
             ellipse2[i] = { x,y };
         }
     }
     else {
         for (int i = 0; i < num; i++) {
-            float x = rand() % 900 + 300;
-            float y = rand() % 550 + 50;
+            float x = FLOAT(rand() % 900 + 300);
+            float y = FLOAT(rand() % 550 + 50);
             InsertEllipse(x, y);
             ellipse[i] = { x,y };
         }
